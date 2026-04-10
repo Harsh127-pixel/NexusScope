@@ -6,7 +6,6 @@
 # ── API Framework ─────────────────────────────
 fastapi
 uvicorn[standard]
-gunicorn
 python-multipart
 
 # ── Data Validation ───────────────────────────

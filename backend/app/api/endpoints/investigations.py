@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 from celery import Celery
 from celery.result import AsyncResult
 import dns.asyncresolver
+from dotenv import load_dotenv
 import exifread
 import httpx
 from bs4 import BeautifulSoup
@@ -20,6 +21,8 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 router = APIRouter()
+
+load_dotenv(dotenv_path=Path(__file__).resolve().parents[3] / ".env", override=False)
 
 TASKS: Dict[str, Dict[str, Any]] = {}
 TASK_LOCK = asyncio.Lock()

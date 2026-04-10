@@ -3,10 +3,10 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-echo "Starting backend with gunicorn from ${ROOT_DIR}/backend"
+echo "Starting backend with uvicorn from ${ROOT_DIR}/backend"
 (
   cd "${ROOT_DIR}/backend"
-  gunicorn -k uvicorn.workers.UvicornWorker main:app --bind 0.0.0.0:8000 --reload
+  python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ) &
 BACKEND_PID=$!
 
