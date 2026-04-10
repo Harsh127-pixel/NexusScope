@@ -105,7 +105,7 @@
               <span v-else class="text-warning text-caption text-mono">TOR PROXY OFFLINE — Start Tor service before crawling</span>
             </div>
             <div class="text-caption ns-muted q-mt-xs" style="font-size: 11px">
-              All traffic will be routed through <code>socks5://127.0.0.1:9050</code>. Your real IP will be hidden.
+              All traffic will be routed through <code>socks5://16.16.25.208:9050</code>. Your real IP will be hidden.
             </div>
           </div>
         </transition>

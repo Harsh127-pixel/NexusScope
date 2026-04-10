@@ -35,8 +35,8 @@ _CACHED_UA: Optional[List[str]] = None
 DEFAULT_SCRAPER_PROXY = os.getenv("DEFAULT_SCRAPER_PROXY")
 
 # ── Theater 1: Dark Web / Onion ───────────────────────────────
-TOR_PROXY_URL = os.getenv("TOR_PROXY_URL", "socks5://127.0.0.1:9050")
-TOR_TIMEOUT = int(os.getenv("TOR_TIMEOUT", "30"))
+TOR_PROXY_URL = os.getenv("TOR_PROXY_URL", "socks5://16.16.25.208:9050")
+TOR_TIMEOUT = int(os.getenv("TOR_TIMEOUT", "45"))
 
 # ── Theater 2: General Recon (Phone) ─────────────────────────
 NUMVERIFY_API_KEY = os.getenv("NUMVERIFY_API_KEY", "")
