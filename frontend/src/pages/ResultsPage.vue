@@ -1,7 +1,7 @@
 <template>
   <q-page :class="$q.screen.gt.sm ? 'q-pa-xl' : 'q-pa-md'">
     <!-- TASK HEADER -->
-    <div class="row items-center justify-between q-mb-xl">
+    <div class="row items-start justify-between q-mb-xl q-gutter-y-md">
       <div class="column">
         <q-breadcrumbs class="ns-label q-mb-sm" active-color="primary">
           <q-breadcrumbs-el label="DASHBOARD" to="/" />
@@ -9,10 +9,11 @@
           <q-breadcrumbs-el label="RESULTS" />
         </q-breadcrumbs>
         
-        <div class="row items-center q-gutter-x-md">
+        <div class="row items-center q-gutter-x-sm flex-wrap">
           <div 
             class="ns-heading-md text-white cursor-pointer hover-accent" 
             @click="copyTaskId"
+            style="word-break: break-all; max-width: 280px"
           >
             {{ taskId }}
             <q-tooltip>CLICK TO COPY TASK ID</q-tooltip>
@@ -34,11 +35,11 @@
         </div>
       </div>
 
-      <div class="row q-gutter-x-sm" v-if="currentTask?.status === 'completed'">
-        <q-btn flat class="ns-btn-secondary" icon="print" label="PRINT REPORT" @click="printReport" />
-        <q-btn flat class="ns-btn-secondary" icon="download" label="EXPORT JSON" @click="exportJson" />
-        <q-btn flat class="ns-btn-secondary" icon="content_copy" label="COPY RAW" @click="copyRaw" />
-        <q-btn color="primary" icon="add" label="NEW SEARCH" to="/search" />
+      <div class="row q-gutter-xs flex-wrap" v-if="currentTask?.status === 'completed'">
+        <q-btn v-if="$q.screen.gt.xs" flat class="ns-btn-secondary" icon="print" label="PRINT" @click="printReport" />
+        <q-btn flat class="ns-btn-secondary" icon="download" :label="$q.screen.gt.xs ? 'EXPORT JSON' : ''" @click="exportJson" />
+        <q-btn flat class="ns-btn-secondary" icon="content_copy" :label="$q.screen.gt.xs ? 'COPY RAW' : ''" @click="copyRaw" />
+        <q-btn color="primary" icon="add" :label="$q.screen.gt.xs ? 'NEW SEARCH' : ''" to="/search" />
       </div>
     </div>
 

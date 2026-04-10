@@ -1,7 +1,7 @@
 <template>
-  <q-page class="q-pa-xl">
+  <q-page :class="$q.screen.gt.sm ? 'q-pa-xl' : 'q-pa-md'">
     <!-- TOP BAR -->
-    <div class="row items-center justify-between q-mb-lg q-gutter-y-md">
+    <div class="row items-start justify-between q-mb-lg q-gutter-y-md">
       <div class="row items-center">
         <h1 class="ns-heading-lg text-white q-ma-none q-mr-md">Investigation History</h1>
         <q-badge color="accent-dim" text-color="primary" class="ns-label q-pa-sm">
@@ -9,7 +9,7 @@
         </q-badge>
       </div>
 
-      <div class="row items-center q-gutter-x-sm no-wrap">
+      <div class="row items-center q-gutter-sm flex-wrap">
         <!-- Global Search -->
         <q-input 
           v-model="filters.query" 
@@ -57,7 +57,7 @@
 
         <!-- Date Range -->
         <q-btn flat dense class="ns-btn-secondary q-px-md" icon="event">
-          <span class="q-ml-sm ns-label">RANGE</span>
+          <span class="q-ml-sm ns-label" v-if="$q.screen.gt.xs">RANGE</span>
           <q-popup-proxy cover transition-show="scale" transition-hide="scale">
             <q-date v-model="filters.dateRange" range dark color="primary">
               <div class="row items-center justify-end q-gutter-sm">
@@ -410,8 +410,8 @@ const emptyStateSub = computed(() => hasFilters.value ? 'Try adjusting your tact
 .ns-bulk-bar {
   background: var(--ns-bg-elevated);
   border-top: 1px solid var(--ns-accent);
-  width: calc(100% - 240px); /* Account for sidebar width */
-  left: auto;
+  width: 100%;
+  left: 0;
   right: 0;
   z-index: 1000;
 }
