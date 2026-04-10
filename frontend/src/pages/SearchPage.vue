@@ -1,5 +1,5 @@
 <template>
-  <q-page class="search-page q-pa-xl">
+  <q-page :class="$q.screen.gt.sm ? 'search-page q-pa-xl' : 'search-page q-pa-md'">
     <div class="full-width" style="max-width: 1020px; margin: 0 auto">
 
       <!-- ── PAGE HEADER ──────────────────────────────────────────── -->
@@ -63,7 +63,7 @@
       </div>
 
       <!-- ── MODULE + INPUT PANEL ─────────────────────────────────── -->
-      <q-card flat class="intel-panel q-pa-xl">
+      <q-card flat :class="$q.screen.gt.sm ? 'intel-panel q-pa-xl' : 'intel-panel q-pa-md'">
 
         <!-- Module selector tabs within the active theater -->
         <div class="module-tabs q-mb-lg">
@@ -218,13 +218,13 @@
           <q-btn
             type="submit"
             class="launch-btn full-width q-mt-md"
-            :class="`launch-btn--${searchStore.selectedTheater}`"
+            :class="[`launch-btn--${searchStore.selectedTheater}`, $q.screen.lt.sm ? 'q-py-md' : 'q-py-lg']"
             :loading="searchStore.isDispatching"
             id="launch-btn"
           >
             <div class="row items-center no-wrap">
               <Zap :size="18" class="q-mr-sm" />
-              <span class="text-weight-bold tracking-wide">INITIATE INVESTIGATION</span>
+              <span class="text-weight-bold tracking-wide" :style="{ fontSize: $q.screen.lt.sm ? '11px' : '13px' }">INITIATE INVESTIGATION</span>
             </div>
           </q-btn>
         </q-form>

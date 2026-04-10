@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-xl">
+  <q-page :class="$q.screen.gt.sm ? 'q-pa-xl' : 'q-pa-md'">
     <!-- TASK HEADER -->
     <div class="row items-center justify-between q-mb-xl">
       <div class="column">
@@ -586,6 +586,126 @@
       <!-- ═══════════════════════════════════════════════════════════ -->
       <!-- USERNAME MULTI-PLATFORM RESULTS                           -->
       <!-- ═══════════════════════════════════════════════════════════ -->
+      </section>
+ 
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- THEATER II: IP INTELLIGENCE RESULTS                       -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <section v-if="currentTask?.module === 'ip'" class="ns-report-card q-pa-lg q-mb-xl" style="border-color: rgba(56,189,248,0.4)">
+        <div class="row items-center q-gutter-x-sm q-mb-lg">
+          <MapPin :size="24" style="color:#38bdf8" />
+          <div>
+            <div class="ns-label" style="color:#38bdf8">THEATER II — IP INTELLIGENCE REPORT</div>
+            <h2 class="ns-heading-md text-white q-ma-none">{{ currentTask?.target }}</h2>
+          </div>
+        </div>
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-md-4">
+            <q-card flat class="ns-report-block q-pa-md">
+              <div class="ns-label q-mb-sm">NETWORK INFO</div>
+              <div class="column q-gutter-y-xs text-mono">
+                <div><span class="ns-muted">HOSTNAME:</span> {{ currentTask?.result?.hostname || 'N/A' }}</div>
+                <div><span class="ns-muted">ASN:</span> {{ currentTask?.result?.asn || 'N/A' }}</div>
+                <div><span class="ns-muted">ISP:</span> {{ currentTask?.result?.isp || 'N/A' }}</div>
+              </div>
+            </q-card>
+          </div>
+          <div class="col-12 col-md-4">
+            <q-card flat class="ns-report-block q-pa-md">
+              <div class="ns-label q-mb-sm">GEOLOCATION</div>
+              <div class="column q-gutter-y-xs text-mono">
+                <div><span class="ns-muted">CITY:</span> {{ currentTask?.result?.city || 'N/A' }}</div>
+                <div><span class="ns-muted">REGION:</span> {{ currentTask?.result?.region || 'N/A' }}</div>
+                <div><span class="ns-muted">COUNTRY:</span> {{ currentTask?.result?.country || 'N/A' }}</div>
+              </div>
+            </q-card>
+          </div>
+          <div class="col-12 col-md-4">
+            <q-card flat class="ns-report-block q-pa-md">
+              <div class="ns-label q-mb-sm">SECURITY SIGNALS</div>
+              <div class="column q-gutter-y-xs text-mono">
+                <div class="row items-center justify-between">
+                  <span class="ns-muted">PROXY/VPN:</span>
+                  <q-badge :color="currentTask?.result?.is_proxy ? 'negative' : 'positive'">{{ currentTask?.result?.is_proxy ? 'YES' : 'CLEAN' }}</q-badge>
+                </div>
+                <div class="row items-center justify-between">
+                  <span class="ns-muted">TOR NODE:</span>
+                  <q-badge :color="currentTask?.result?.is_tor ? 'negative' : 'positive'">{{ currentTask?.result?.is_tor ? 'YES' : 'CLEAN' }}</q-badge>
+                </div>
+              </div>
+            </q-card>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- THEATER II: WEB SCRAPER RESULTS                           -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <section v-if="currentTask?.module === 'scraper'" class="ns-report-card q-pa-lg q-mb-xl" style="border-color: rgba(56,189,248,0.4)">
+        <div class="row items-center q-gutter-x-sm q-mb-lg">
+          <Code :size="24" style="color:#7dd3fc" />
+          <div>
+            <div class="ns-label" style="color:#7dd3fc">THEATER II — WEB ASSET ANALYSIS</div>
+            <h2 class="ns-heading-sm text-white q-ma-none ellipsis">{{ currentTask?.target }}</h2>
+          </div>
+        </div>
+        <q-card flat class="ns-report-block q-pa-md q-mb-md">
+          <div class="ns-label q-mb-sm">PAGE TITLE & DESCRIPTION</div>
+          <div class="text-h6 text-white q-mb-xs">{{ currentTask?.result?.title || 'No Title Found' }}</div>
+          <p class="ns-muted q-ma-none text-caption">{{ currentTask?.result?.meta_description || 'No meta description provided.' }}</p>
+        </q-card>
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-sm-6">
+            <q-card flat class="ns-report-block q-pa-md">
+              <div class="ns-label q-mb-sm">H1 HEADERS</div>
+              <div v-if="currentTask?.result?.h1?.length" class="column q-gutter-y-xs">
+                <div v-for="h in currentTask.result.h1" :key="h" class="text-mono text-caption text-info text-italic"># {{ h }}</div>
+              </div>
+              <div v-else class="ns-muted italic">No H1 tags detected</div>
+            </q-card>
+          </div>
+          <div class="col-12 col-sm-6">
+            <q-card flat class="ns-report-block q-pa-md">
+              <div class="ns-label q-mb-sm">OUTBOUND LINKS (SAMPLE)</div>
+              <div v-if="currentTask?.result?.links_sample?.length" class="column q-gutter-y-xs">
+                <div v-for="link in currentTask.result.links_sample" :key="link" class="text-mono text-caption ellipsis text-blue-3">→ {{ link }}</div>
+              </div>
+              <div v-else class="ns-muted italic">No links extracted</div>
+            </q-card>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- THEATER III: METADATA EXTRACTION RESULTS                  -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <section v-if="currentTask?.module === 'metadata'" class="ns-report-card q-pa-lg q-mb-xl" style="border-color: rgba(249,115,22,0.4)">
+        <div class="row items-center q-gutter-x-sm q-mb-lg">
+          <FileSearch :size="24" style="color:#fb923c" />
+          <div>
+            <div class="ns-label" style="color:#fb923c">THEATER III — FORENSIC METADATA</div>
+            <h2 class="ns-heading-md text-white q-ma-none">Image Forensics</h2>
+          </div>
+        </div>
+        <div class="row q-col-gutter-md">
+          <div class="col-12 col-md-5">
+            <q-img :src="currentTask?.target" class="rounded-borders border-ns" fit="contain" style="max-height: 250px" />
+          </div>
+          <div class="col-12 col-md-7">
+            <q-card flat class="ns-report-block q-pa-md full-height">
+              <div class="ns-label q-mb-md">EXIF ATTRIBUTES</div>
+              <div class="column q-gutter-y-sm text-mono">
+                <div class="row justify-between"><span class="ns-muted">CAMERA:</span> <span>{{ currentTask?.result?.camera_make || 'N/A' }} {{ currentTask?.result?.camera_model }}</span></div>
+                <div class="row justify-between"><span class="ns-muted">CAPTURED:</span> <span>{{ currentTask?.result?.datetime_original || 'N/A' }}</span></div>
+                <div class="row justify-between"><span class="ns-muted">TAGS FOUND:</span> <span>{{ currentTask?.result?.tag_count || 0 }}</span></div>
+                <div class="ns-label q-mt-md" style="font-size: 10px">SOURCE URL</div>
+                <div class="text-info ellipsis" style="font-size: 11px">{{ currentTask?.target }}</div>
+              </div>
+            </q-card>
+          </div>
+        </div>
+      </section>
+ 
       <section v-if="currentTask?.module === 'username'" class="ns-report-card q-pa-xl q-mb-xl" style="border-color: rgba(20,184,166,0.4)">
         <div class="row items-center q-gutter-x-sm q-mb-lg">
           <User :size="24" style="color:#14b8a6" />

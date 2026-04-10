@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import hashlib
 import io
 import json
@@ -23,6 +24,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 load_dotenv(dotenv_path=Path(__file__).resolve().parents[3] / ".env", override=False)
 
@@ -631,20 +633,54 @@ async def _domain_lookup(domain: str) -> Dict[str, Any]:
     }
 
 
-async def _ip_lookup(ip_addr: str) -> Dict[str, Any]:
-    resolver = dns.asyncresolver.Resolver()
-    ptr_result: List[str] = []
-    try:
-        answer = await resolver.resolve_address(ip_addr)
-        ptr_result = [str(item) for item in answer]
-    except Exception as exc:
-        ptr_result = [f"ptr_error: {exc}"]
-
-    return {
-        "ip": ip_addr,
-        "ptr": ptr_result,
-        "note": "External geolocation API is disabled in scraper-only mode.",
+async def _ip_lookup(ip: str) -> Dict[str, Any]:
+    """Gather deep intelligence on a target IP address."""
+    result: Dict[str, Any] = {
+        "ip": ip,
+        "hostname": "resolving...",
+        "asn": None,
+        "company": None,
+        "isp": None,
+        "city": None,
+        "region": None,
+        "country": None,
+        "loc": None,
+        "timezone": None,
+        "is_proxy": False,
+        "is_vpn": False,
+        "is_tor": False,
+        "status": "partial"
     }
+
+    # Reverse DNS
+    try:
+        loop = asyncio.get_event_loop()
+        names = await loop.run_in_executor(None, socket.gethostbyaddr, ip)
+        result["hostname"] = names[0] if names else "no reverse dns"
+    except Exception:
+        result["hostname"] = "lookup failed"
+
+    # IPInfo / ASN Data
+    try:
+        async with httpx.AsyncClient(timeout=8) as client:
+            resp = await client.get(f"https://ipapi.co/{ip}/json/")
+            if resp.status_code == 200:
+                data = resp.json()
+                result.update({
+                    "asn": data.get("asn"),
+                    "isp": data.get("org"),
+                    "company": data.get("org"),
+                    "city": data.get("city"),
+                    "region": data.get("region"),
+                    "country": data.get("country_name"),
+                    "loc": f"{data.get('latitude')},{data.get('longitude')}",
+                    "timezone": data.get("timezone"),
+                    "status": "success"
+                })
+    except Exception as e:
+         logger.error(f"IP lookup failed for {ip}: {e}")
+
+    return result
 
 
 async def _scrape_web(target: str, proxy: Optional[str], timeout: int, use_playwright: bool) -> Dict[str, Any]:
@@ -980,6 +1016,7 @@ async def _phone_lookup(phone: str) -> Dict[str, Any]:
     cleaned = re.sub(r"[^\d+]", "", phone.strip())
     if not cleaned.startswith("+"):
         cleaned = f"+{cleaned}"
+
 
     result: Dict[str, Any] = {
         "input": phone,
