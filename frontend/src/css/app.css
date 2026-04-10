@@ -1,7 +1,17 @@
 /* Custom styles for NexusScope */
+html, body, #q-app {
+  min-height: 100%;
+}
+
 body {
-  background: #121212;
-  font-family: 'Roboto', sans-serif;
+  margin: 0;
+  color: var(--ns-text-primary);
+  background:
+    radial-gradient(circle at top, rgba(0, 212, 170, 0.12), transparent 30%),
+    radial-gradient(circle at right, rgba(52, 152, 219, 0.08), transparent 24%),
+    linear-gradient(180deg, #0b1016 0%, #0d1117 55%, #090d12 100%);
+  font-family: var(--ns-font-sans);
+  overflow-x: hidden;
 }
 
 .text-indigo {
@@ -16,4 +26,12 @@ body {
   background: rgba(30, 30, 30, 0.8);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.q-page {
+  color: var(--ns-text-primary);
+}
+
+.q-page-container {
+  padding-top: 0;
 }

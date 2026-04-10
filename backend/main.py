@@ -62,6 +62,10 @@ from firebase_admin import credentials
 from pydantic import BaseModel, Field
 from app.api.endpoints.investigations import router as investigations_router
 
+# ── S3 Leak Hunting Module ────────────────────
+from database import initialize_pool, close_pool, get_scan
+from workers import run_leak_scan
+
 # ── Logging ───────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
@@ -97,11 +101,6 @@ FIREBASE_CRED_PATH: str = os.environ.get(
     "/etc/secrets/firebase-service-account.json",
 )
 FIREBASE_PROJECT_ID: str = os.environ.get("FIREBASE_PROJECT_ID", "intrusion-x-se-default")
-
-# ── Redis / Celery ────────────────────────────
-REDIS_URL: str = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
-CELERY_BROKER_URL: str = os.environ.get("CELERY_BROKER_URL", REDIS_URL)
-CELERY_RESULT_BACKEND: str = os.environ.get("CELERY_RESULT_BACKEND", REDIS_URL)
 
 # ── Chatbot Tokens ────────────────────────────
 TELEGRAM_BOT_TOKEN: str = os.environ.get("TELEGRAM_BOT_TOKEN", "REPLACE_WITH_BOT_TOKEN")
@@ -201,6 +200,66 @@ class TelegramWebhookAck(BaseModel):
 
 class WhatsAppVerifyResponse(BaseModel):
     challenge: str
+
+
+# ──────────────────────────────────────────────
+# S3 LEAK HUNTING MODULE — REQUEST & RESPONSE
+# ──────────────────────────────────────────────
+
+class S3LeakScanRequest(BaseModel):
+    """Request model for initiating an S3 bucket leak scan."""
+    domain: str = Field(..., example="example.com", description="Target domain to scan for S3 buckets")
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "domain": "example.com"
+            }
+        }
+
+
+class S3BucketFinding(BaseModel):
+    """A single S3 bucket finding."""
+    bucket_name: str
+    http_code: int = Field(..., description="HTTP response code (200=open, 403=closed)")
+
+
+class S3ScanResults(BaseModel):
+    """Complete S3 leak scan results."""
+    domain: str
+    base_name: str
+    total_checked: int = Field(..., description="Total bucket candidates probed")
+    buckets_found: Dict[str, List[S3BucketFinding]] = Field(
+        ...,
+        description="Buckets grouped by status: 'open' (200 OK) and 'closed' (403 Forbidden)"
+    )
+    errors: Dict[str, List[str]] = Field(
+        default_factory=dict,
+        description="Errors grouped by type: 'timeout', 'connection_failed', etc."
+    )
+
+
+class S3ScanStatusResponse(BaseModel):
+    """S3 leak scan status and results."""
+    task_id: str = Field(..., description="UUID of the scan task")
+    target_domain: str
+    status: str = Field(
+        ...,
+        description="Current status: 'running', 'completed', or 'failed'",
+        pattern="^(running|completed|failed)$"
+    )
+    results: Optional[S3ScanResults] = Field(None, description="Results (populated when status='completed')")
+    error: Optional[str] = Field(None, description="Error message (populated when status='failed')")
+
+
+class S3ScanInitResponse(BaseModel):
+    """Response when starting a new S3 leak scan."""
+    task_id: str = Field(..., description="UUID for tracking this scan")
+    message: str
+    estimated_duration_seconds: int = Field(
+        default=60,
+        description="Estimated time to complete scan (depends on network)"
+    )
 
 
 # ──────────────────────────────────────────────
@@ -332,7 +391,7 @@ async def _log_to_db(
     """
     Fire-and-forget INSERT into osint_logs.
     Designed to be awaited directly; wrap in asyncio.create_task for full
-    background execution or hand off to a Celery task in production.
+    background execution.
     """
     if _db_pool is None:
         logger.warning("DB pool unavailable — skipping log for scan_id=%s", scan_id)
@@ -463,11 +522,6 @@ async def ip_intelligence(
     and enriches the result with ISP, ASN, and coordinate data.
 
     All results are asynchronously persisted to the `osint_logs` PostgreSQL table.
-
-    ### Celery Note
-    This handler is structured for easy migration to a Celery task. Replace the
-    body with `celery_app.send_task("tasks.ip_intel", args=[ip_address])` and
-    return a `202 Accepted` with a `task_id`.
 
     ### Parameters
     - **ip_address**: Target IPv4 or IPv6 address (e.g., `8.8.8.8`)
@@ -916,8 +970,6 @@ async def _telegram_echo_reply(chat_id: int, text: str) -> None:
     This runs **after** the 200 OK has been returned to Telegram's servers,
     satisfying their 5-second response window requirement.
 
-    In production, replace with a dedicated Celery task:
-        celery_app.send_task("tasks.telegram_reply", args=[chat_id, text])
     """
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
     payload = {
@@ -959,7 +1011,7 @@ async def telegram_webhook(
 
     **Critical requirement:** Telegram's servers require a `200 OK` response
     within **5 seconds**. This handler immediately returns `200` and offloads
-    all processing to FastAPI `BackgroundTasks` (or Celery in production).
+    all processing to FastAPI `BackgroundTasks`.
 
     ### Behaviour
     1. Parse the `chat.id` and `message.text` from the update payload.
@@ -1049,8 +1101,6 @@ async def _process_whatsapp_message(payload: Dict[str, Any]) -> None:
     Parses the message and sends an acknowledgement reply via the WhatsApp
     Cloud API. Extend this function to route messages to your OSINT engine.
 
-    In production, replace with a Celery task:
-        celery_app.send_task("tasks.whatsapp_process", args=[payload])
     """
     try:
         entry = payload.get("entry", [{}])[0]
@@ -1153,7 +1203,7 @@ async def whatsapp_inbound(
 async def on_startup() -> None:
     """
     Application startup sequence.
-    Initialises Firebase and PostgreSQL in dependency order.
+    Initialises Firebase, PostgreSQL, and S3 leak hunting database in dependency order.
     Server starts even if either service is unreachable.
     """
     logger.info("=" * 60)
@@ -1161,18 +1211,34 @@ async def on_startup() -> None:
     logger.info("=" * 60)
     _init_firebase()
     await _init_db()
+    
+    # Initialize S3 leak hunting database pool
+    try:
+        await initialize_pool()
+        logger.info("S3 leak hunting database pool initialized.")
+    except Exception as e:
+        logger.error("S3 leak hunting database initialization FAILED: %s", e)
+        # Server continues; S3 endpoints will return 503 if DB is unavailable
+    
     logger.info("Startup complete. API is ready to serve requests.")
 
 
 @app.on_event("shutdown")
 async def on_shutdown() -> None:
     """
-    Graceful shutdown: close the PostgreSQL connection pool.
+    Graceful shutdown: close both PostgreSQL connection pools (main & S3 hunting).
     """
     global _db_pool
     if _db_pool is not None:
         await _db_pool.close()
         logger.info("PostgreSQL connection pool closed.")
+    
+    # Close S3 leak hunting database pool
+    try:
+        await close_pool()
+    except Exception as e:
+        logger.error("Error closing S3 hunting pool: %s", e)
+    
     logger.info("%s shutdown complete.", APP_NAME)
 
 
@@ -1221,7 +1287,200 @@ async def detailed_health() -> HealthResponse:
 
 
 # ──────────────────────────────────────────────
-# §14 ENTRYPOINT
+# §14 S3 LEAK HUNTING ENDPOINTS
+# ──────────────────────────────────────────────
+
+@app.post(
+    "/api/v1/scan/leaks",
+    response_model=S3ScanInitResponse,
+    tags=["S3 Leak Hunting"],
+    summary="Start an S3 bucket leak scan",
+    status_code=status.HTTP_202_ACCEPTED,
+)
+async def start_s3_leak_scan(
+    request: S3LeakScanRequest,
+    background_tasks: BackgroundTasks,
+    user: Optional[Dict[str, Any]] = Depends(optional_auth),
+) -> S3ScanInitResponse:
+    """
+    ## Start S3 Bucket Leak Scan
+    
+    Initiates an asynchronous scan for exposed or misconfigured Amazon S3 buckets
+    associated with the target domain.
+    
+    ### Returns immediately (202 Accepted)
+    - A `task_id` UUID for tracking the scan status
+    - Poll the `/api/v1/scan/{task_id}` endpoint to get results
+    
+    ### How it works
+    1. Extracts the domain base name (e.g., "example" from "example.com")
+    2. Generates 50+ common S3 bucket name permutations
+    3. Concurrently probes each bucket for public access
+    4. Stores results in PostgreSQL for later retrieval
+    
+    ### Response codes
+    - **200 OK** → Bucket is **publicly accessible** (VULNERABLE)
+    - **403 Forbidden** → Bucket exists but is **protected** (SECURE)
+    - **404 Not Found** → Bucket doesn't exist (ignored)
+    - **Timeout** → Network issue or AWS rate-limiting (ignored)
+    
+    ### Example
+    ```bash
+    curl -X POST http://localhost:8000/api/v1/scan/leaks \
+      -H "Content-Type: application/json" \
+      -d '{"domain": "example.com"}'
+    
+    # Response:
+    # {
+    #   "task_id": "a1b2c3d4-e5f6-4789-0abc-def123456789",
+    #   "message": "Scan started",
+    #   "estimated_duration_seconds": 60
+    # }
+    
+    # Poll for results:
+    curl http://localhost:8000/api/v1/scan/a1b2c3d4-e5f6-4789-0abc-def123456789
+    ```
+    """
+    task_id = uuid.uuid4()
+    
+    logger.info(
+        "S3 leak scan initiated: task_id=%s domain=%s user=%s",
+        task_id,
+        request.domain,
+        user.get("email") if user else "anonymous"
+    )
+    
+    # Trigger background worker
+    background_tasks.add_task(run_leak_scan, task_id, request.domain)
+    
+    return S3ScanInitResponse(
+        task_id=str(task_id),
+        message="Scan started. Check status at /api/v1/scan/{task_id}",
+        estimated_duration_seconds=60
+    )
+
+
+@app.get(
+    "/api/v1/scan/{task_id}",
+    response_model=S3ScanStatusResponse,
+    tags=["S3 Leak Hunting"],
+    summary="Poll S3 leak scan status",
+)
+async def get_s3_leak_scan_status(
+    task_id: str,
+    user: Optional[Dict[str, Any]] = Depends(optional_auth),
+) -> S3ScanStatusResponse:
+    """
+    ## Get S3 Leak Scan Status
+    
+    Polls the status and results of a previously initiated S3 leak scan.
+    
+    ### Status lifecycle
+    1. **"running"** — Scan is in progress; results will be empty
+    2. **"completed"** — Scan finished; results contain buckets found
+    3. **"failed"** — Scan encountered an error; see error field
+    
+    ### Results structure (when status='completed')
+    ```json
+    {
+      "domain": "example.com",
+      "base_name": "example",
+      "total_checked": 52,
+      "buckets_found": {
+        "open": [
+          {"bucket_name": "example-dev", "http_code": 200},
+          {"bucket_name": "example-backup", "http_code": 200}
+        ],
+        "closed": [
+          {"bucket_name": "example-prod", "http_code": 403}
+        ]
+      },
+      "errors": {
+        "timeout": ["backup-example"],
+        "connection_failed": []
+      }
+    }
+    ```
+    
+    ### Polling strategy
+    ```python
+    import time
+    from uuid import UUID
+    import httpx
+    
+    task_id = "a1b2c3d4-e5f6-4789-0abc-def123456789"
+    max_attempts = 360  # 30 minutes with 5-second polls
+    
+    for attempt in range(max_attempts):
+        response = httpx.get(f"http://localhost:8000/api/v1/scan/{task_id}")
+        scan = response.json()
+        
+        if scan["status"] == "running":
+            print(f"Scan in progress... ({attempt+1}/{max_attempts})")
+            time.sleep(5)  # Poll every 5 seconds
+        else:
+            print(f"Scan complete: {scan['status']}")
+            if scan['results']:
+                print(f"Found {len(scan['results']['buckets_found']['open'])} open buckets")
+            break
+    ```
+    """
+    try:
+        # Parse task_id as UUID
+        task_uuid = uuid.UUID(task_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid task_id format (expected UUID): {task_id}"
+        )
+    
+    # Query PostgreSQL for scan record
+    try:
+        scan_record = await get_scan(task_uuid)
+    except Exception as e:
+        logger.error("Failed to query scan status: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database is currently unavailable. Please try again later."
+        )
+    
+    if scan_record is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Scan task not found: {task_id}"
+        )
+    
+    # Build response
+    status_val = scan_record["status"]
+    results = None
+    error = None
+    
+    if status_val == "completed":
+        # Parse JSONB results
+        import json
+        results_json = scan_record["results"] or {}
+        if isinstance(results_json, str):
+            results_json = json.loads(results_json)
+        results = S3ScanResults(**results_json)
+    elif status_val == "failed":
+        # Extract error message
+        results_json = scan_record["results"] or {}
+        if isinstance(results_json, str):
+            import json
+            results_json = json.loads(results_json)
+        error = results_json.get("error", "Unknown error")
+    
+    return S3ScanStatusResponse(
+        task_id=str(task_uuid),
+        target_domain=scan_record["target_domain"],
+        status=status_val,
+        results=results,
+        error=error
+    )
+
+
+# ──────────────────────────────────────────────
+# §15 ENTRYPOINT
 # ──────────────────────────────────────────────
 
 if __name__ == "__main__":

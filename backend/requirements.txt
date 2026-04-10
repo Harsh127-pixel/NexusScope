@@ -19,7 +19,7 @@ asyncpg
 firebase-admin
 
 # ── HTTP Client ───────────────────────────────
-httpx
+httpx[socks]    # [socks] extra enables SOCKS5 proxy support for Tor routing
 
 # ── DNS Resolution ────────────────────────────
 dnspython
@@ -36,10 +36,6 @@ playwright   # run: playwright install chromium
 
 # ── CLI Rendering / Progress UI ───────────────
 rich
-
-# ── Task Queue (Celery-ready) ─────────────────
-celery
-redis         # Celery broker/backend
 
 # ── Environment ───────────────────────────────
 python-dotenv

@@ -7,9 +7,6 @@ class Settings(BaseSettings):
     # Firebase
     FIREBASE_PROJECT_ID: str = "nexus-scope-placeholder"
     
-    # Redis
-    REDIS_URL: str = "redis://redis:6379/0"
-    
     class Config:
         env_file = ".env"
 

@@ -20,7 +20,7 @@ export const useResultsStore = defineStore('results', () => {
     taskId.value = id;
     isPolling.value = true;
     logs.value = [];
-    appendLog('INITIATING TELEMETRY SYNCHRONIZATION...');
+    appendLog('INITIATING API STATUS SYNC...');
 
     pollInterval.value = setInterval(async () => {
       try {
@@ -28,18 +28,18 @@ export const useResultsStore = defineStore('results', () => {
         taskData.value = response;
 
         if (response.status === 'completed') {
-          appendLog('TACTICAL DATA ACQUISITION COMPLETE.');
+          appendLog('API EXECUTION COMPLETE.');
           stopPolling();
           appStore.decrementActiveTaskCount();
         } else if (response.status === 'failed') {
-          appendLog(`CRITICAL ERROR: ${response.error || 'TASK_EXECUTION_FAULT'}`);
+          appendLog(`CRITICAL ERROR: ${response.error || 'REQUEST_EXECUTION_FAULT'}`);
           stopPolling();
           appStore.decrementActiveTaskCount();
         } else {
-          appendLog(`POLLING STATUS: ${response.status.toUpperCase()}...`);
+          appendLog(`API STATUS: ${response.status.toUpperCase()}...`);
         }
       } catch (error) {
-        appendLog('TELEMETRY DROPOUT: RETRYING CONNECTION...');
+        appendLog('API SYNC DROPOUT: RETRYING CONNECTION...');
       }
     }, 2000);
   }
@@ -57,6 +57,13 @@ export const useResultsStore = defineStore('results', () => {
     logs.value.push(`[${timestamp}] ${msg}`);
   }
 
+  function reset() {
+    stopPolling();
+    taskId.value = null;
+    taskData.value = null;
+    logs.value = [];
+  }
+
   return {
     taskId,
     taskData,
@@ -64,6 +71,7 @@ export const useResultsStore = defineStore('results', () => {
     logs,
     startPolling,
     stopPolling,
-    appendLog
+    appendLog,
+    reset
   };
 });

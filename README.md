@@ -5,14 +5,12 @@ NexusScope is a high-performance, modular OSINT (Open Source Intelligence) platf
 ## Architecture
 - **Frontend**: Vue 3 + Quasar Framework (SPA) - Sleek, responsive investigative dashboard.
 - **Backend**: FastAPI (Python) - High-concurrency API layer for coordination.
-- **Task Queue**: Celery + Redis - Asynchronous execution of heavy OSINT scanning modules.
 - **Database**: Google Firestore - NoSQL storage for flexible intelligence data structures.
-- **OSINT Modules**: Modular workers utilizing Playwright, BeautifulSoup, DNSPython, and ExifRead.
+- **OSINT Modules**: Async in-process modules utilizing Playwright, BeautifulSoup, DNSPython, and ExifRead.
 
 ## Project Structure
 - `/frontend`: Investigative dashboard built with Quasar.
 - `/backend`: Core API handling authentication, job submission, and data retrieval.
-- `/workers`: Celery workers executing distributed OSINT tasks.
 - `/shared`: Shared Pydantic schemas and utility types.
 
 ## Tech Stack
@@ -20,7 +18,7 @@ NexusScope is a high-performance, modular OSINT (Open Source Intelligence) platf
 - **Intelligence Core**: Python (Playwright, BeautifulSoup4, dnspython, exifread)
 - **UI/UX**: Quasar Framework (Vue 3, Pinia)
 - **Storage**: Firebase Firestore
-- **Messaging**: Redis (Broker) + Celery (Workers)
+- **Execution Model**: Async local background tasks managed by the API service
 
 ## Getting Started
 1. Clone the repo.

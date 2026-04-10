@@ -44,7 +44,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # ===============================
-# Python & Backend (FastAPI/Celery)
+# Python & Backend (FastAPI)
 # ===============================
 __pycache__/
 *.py[cod]
@@ -66,8 +66,6 @@ venv.bak/
 coverage.xml
 htmlcov/
 .mypy_cache/
-celerybeat-schedule.db
-celerybeat.pid
 
 # ===============================
 # Secrets / Credentials

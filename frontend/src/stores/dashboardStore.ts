@@ -14,7 +14,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
 
   const systemStatus = ref({
     api: { status: 'ONLINE', latency: '24ms' },
-    redis: { status: 'STABLE', tasks: 12 },
+    queue: { status: 'STABLE', tasks: 12 },
     firestore: { status: 'CONNECTED', throughput: '1.2k req/s' }
   });
 
