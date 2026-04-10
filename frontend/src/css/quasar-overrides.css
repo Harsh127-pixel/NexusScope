@@ -1,0 +1,113 @@
+/* QUASAR COMPONENT OVERRIDES */
+
+/* Global Dark Mode Consistency */
+.q-dark {
+  background: var(--ns-bg-base);
+}
+
+/* Cards - Remove shadows/gradients, add subtle borders */
+.q-card {
+  background: var(--ns-bg-surface);
+  border: 1px solid var(--ns-border);
+  box-shadow: none !important;
+  border-radius: var(--ns-radius-md);
+}
+
+/* Form Inputs - Solid base, accent focus */
+.q-field--filled .q-field__control {
+  background: var(--ns-bg-elevated) !important;
+  border-radius: var(--ns-radius-sm) !important;
+  border: 1px solid transparent;
+  transition: var(--ns-transition);
+}
+
+.q-field--filled .q-field__control:before, 
+.q-field--filled .q-field__control:after {
+  display: none !important; /* Remove Quasar default underlines */
+}
+
+.q-field--focused .q-field__control {
+  border-color: var(--ns-accent) !important;
+  box-shadow: var(--ns-accent-glow) !important;
+}
+
+.q-field__label, .q-field__native, .q-field__input {
+  color: var(--ns-text-secondary) !important;
+}
+
+/* Buttons - Monospaced and Tactical */
+.q-btn {
+  font-family: var(--ns-font-mono);
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0.025em;
+  box-shadow: none !important;
+}
+
+.q-btn--rectangle {
+  border-radius: var(--ns-radius-sm);
+}
+
+.q-btn.bg-primary {
+  background: var(--ns-accent) !important;
+  color: #000000 !important; /* High contrast black on teal */
+}
+
+.q-btn--outline {
+  border: 1px solid var(--ns-border) !important;
+}
+
+.q-btn:active {
+  box-shadow: var(--ns-accent-glow) !important;
+}
+
+/* Tables - Data Dense and Clean */
+.q-table {
+  background: transparent;
+  color: var(--ns-text-primary);
+}
+
+.q-table thead tr, .q-table tbody td {
+  height: 40px;
+}
+
+.q-table th {
+  font-family: var(--ns-font-mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--ns-text-muted);
+  border-bottom: 1px solid var(--ns-border);
+}
+
+.q-table td {
+  border-bottom: 1px solid var(--ns-border);
+}
+
+.q-table__card {
+  background: var(--ns-bg-surface);
+  border: 1px solid var(--ns-border);
+  box-shadow: none !important;
+}
+
+/* Tabs */
+.q-tabs {
+  background: var(--ns-bg-surface);
+  border-bottom: 1px solid var(--ns-border);
+}
+
+.q-tab__label {
+  font-family: var(--ns-font-mono);
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+/* Dialogs */
+.q-dialog__inner--minimized > div {
+  max-width: 560px;
+}
+
+.q-dialog .q-card {
+  background: var(--ns-bg-elevated);
+  border: 1px solid var(--ns-border-hover);
+}

@@ -1,85 +1,320 @@
 <template>
-  <q-layout view="lHh Lpr lFf">
-    <q-header elevated class="bg-indigo-10 text-white">
-      <q-toolbar>
-        <q-btn
-          flat
-          dense
-          round
-          icon="menu"
-          aria-label="Menu"
-          @click="toggleLeftDrawer"
-        />
+  <q-layout view="lHh Lpr lFf" class="ns-layout">
+    <!-- TOP HEADER -->
+    <q-header class="ns-header">
+      <q-toolbar class="q-px-md">
+        <!-- Page Title (Left) -->
+        <div class="ns-page-title ns-heading-sm">
+          {{ route.meta.title || 'Dashboard' }}
+        </div>
 
-        <q-toolbar-title class="text-weight-bold">
-          <q-icon name="explore" size="sm" class="q-mr-sm" />
-          NexusScope
-        </q-toolbar-title>
+        <q-space />
 
-        <div>v1.0.0</div>
+        <!-- Global Search (Center) -->
+        <div class="ns-global-search">
+          <q-input
+            v-model="searchQuery"
+            dense
+            filled
+            placeholder="SEARCH TARGETS, IPS, DOMAINS..."
+            class="ns-search-input"
+          >
+            <template v-slot:prepend>
+              <Search :size="16" class="ns-text-muted" />
+            </template>
+          </q-input>
+        </div>
+
+        <q-space />
+
+        <!-- Actions (Right) -->
+        <div class="row q-gutter-x-md items-center">
+          <!-- Task Queue Indicator -->
+          <div class="ns-task-indicator cursor-pointer" role="status" aria-label="Active Investigations">
+            <Layers :size="18" />
+            <q-badge v-if="appStore.activeTaskCount > 0" color="primary" floating rounded>
+              {{ appStore.activeTaskCount }}
+            </q-badge>
+            <q-tooltip>ACTIVE INVESTIGATIONS</q-tooltip>
+          </div>
+
+          <!-- API Status Chip -->
+          <div :class="['ns-status-chip', appStore.isApiConnected ? 'is-connected' : 'is-offline']" role="status">
+            <div class="status-dot"></div>
+            <span>{{ appStore.isApiConnected ? 'CONNECTED' : 'OFFLINE' }}</span>
+          </div>
+
+          <q-btn flat round dense class="ns-text-muted" aria-label="System Settings">
+            <Settings :size="18" />
+          </q-btn>
+        </div>
       </q-toolbar>
     </q-header>
 
+    <!-- LEFT SIDEBAR -->
     <q-drawer
-      v-model="leftDrawerOpen"
+      v-model="drawerOpen"
       show-if-above
-      bordered
-      class="bg-grey-10"
+      :mini="appStore.sidebarCollapsed"
+      :width="240"
+      :mini-width="56"
+      class="ns-sidebar"
     >
-      <q-list>
-        <q-item-label header class="text-grey-5">
-          Intelligence Dashboard
-        </q-item-label>
+      <div class="column full-height no-wrap">
+        <!-- Sidebar Header -->
+        <div class="ns-sidebar-header row items-center no-wrap q-px-md">
+          <div class="logomark-container row items-center no-wrap">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="ns-logomark" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/>
+              <circle cx="12" cy="12" r="2" fill="currentColor"/>
+              <path d="M12 3V5M12 19V21M3 12H5M19 12H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div v-if="!appStore.sidebarCollapsed" class="ns-wordmark q-ml-sm ns-heading-sm">
+              NEXUS<span>SCOPE</span>
+            </div>
+          </div>
+          
+          <q-space />
+          
+          <q-btn
+            v-if="!appStore.sidebarCollapsed"
+            flat
+            dense
+            round
+            class="ns-collapse-toggle"
+            @click="appStore.toggleSidebar"
+            aria-label="Collapse Sidebar"
+          >
+            <ChevronLeft :size="18" />
+          </q-btn>
+        </div>
 
-        <q-item clickable v-ripple exact to="/">
-          <q-item-section avatar>
-            <q-icon name="dashboard" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>Investigations</q-item-label>
-          </q-item-section>
-        </q-item>
+        <!-- Navigation Menu -->
+        <q-scroll-area class="col">
+          <q-list padding class="ns-nav-list" role="navigation">
+            <q-item
+              v-for="item in navItems"
+              :key="item.path"
+              clickable
+              v-ripple
+              :to="item.path"
+              active-class="ns-nav-active"
+              class="ns-nav-item"
+              :aria-label="item.label"
+            >
+              <q-item-section avatar>
+                <component :is="item.icon" :size="20" aria-hidden="true" />
+                <q-tooltip v-if="appStore.sidebarCollapsed" anchor="center right" self="center left">
+                  {{ item.label }}
+                </q-tooltip>
+              </q-item-section>
+              <q-item-section v-if="!appStore.sidebarCollapsed">
+                {{ item.label }}
+              </q-item-section>
+            </q-item>
+          </q-list>
+        </q-scroll-area>
 
-        <q-item clickable v-ripple>
-          <q-item-section avatar>
-            <q-icon name="search" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>New Scan</q-item-label>
-          </q-item-section>
-        </q-item>
+        <q-space />
 
-        <q-item clickable v-ripple>
-          <q-item-section avatar>
-            <q-icon name="history" />
-          </q-item-section>
-          <q-item-section>
-            <q-item-label>History</q-item-label>
-          </q-item-section>
-        </q-item>
-      </q-list>
+        <!-- Sidebar Footer -->
+        <div class="ns-sidebar-footer q-pa-sm">
+          <div v-if="appStore.sidebarCollapsed" class="column items-center">
+            <q-btn flat dense round @click="appStore.toggleSidebar" aria-label="Expand Sidebar">
+              <ChevronRight :size="18" />
+            </q-btn>
+            <div class="status-dot q-mt-xs" :class="{ 'bg-green': appStore.isApiConnected, 'bg-red': !appStore.isApiConnected }" role="status"></div>
+          </div>
+          <div v-else class="row items-center justify-between q-px-sm">
+            <div class="ns-version">v1.0.0</div>
+            <div class="row items-center">
+              <div class="status-dot q-mr-xs" :class="{ 'bg-green': appStore.isApiConnected, 'bg-red': !appStore.isApiConnected }" role="status"></div>
+              <span class="ns-label" style="font-size: 10px">{{ appStore.isApiConnected ? 'SECURE' : 'DISCONNECTED' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </q-drawer>
 
-    <q-page-container class="bg-dark">
-      <router-view />
+    <!-- MAIN CONTENT -->
+    <q-page-container class="ns-content-container">
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </q-page-container>
   </q-layout>
 </template>
 
-<script>
-import { defineComponent, ref } from 'vue'
+<script setup lang="ts">
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAppStore } from 'src/stores/appStore'
+import { 
+  LayoutDashboard, 
+  Search, 
+  Clock, 
+  Layers, 
+  Activity, 
+  Settings,
+  ChevronLeft,
+  ChevronRight
+} from 'lucide-vue-next'
 
-export default defineComponent({
-  name: 'MainLayout',
-  setup () {
-    const leftDrawerOpen = ref(false)
+const route = useRoute()
+const appStore = useAppStore()
 
-    return {
-      leftDrawerOpen,
-      toggleLeftDrawer () {
-        leftDrawerOpen.value = !leftDrawerOpen.value
-      }
-    }
+const drawerOpen = ref(true)
+const searchQuery = ref('')
+
+const navItems = [
+  { label: 'DASHBOARD', icon: LayoutDashboard, path: '/' },
+  { label: 'INTELLIGENCE SEARCH', icon: Search, path: '/search' },
+  { label: 'TASK HISTORY', icon: Clock, path: '/history' },
+  { label: 'SYSTEM STATUS', icon: Activity, path: '/status' },
+  { label: 'SETTINGS', icon: Settings, path: '/settings' }
+]
+
+// Handle Responsive Collapse
+const handleResize = () => {
+  if (window.innerWidth < 900) {
+    appStore.setSidebar(true)
   }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', handleResize)
+  handleResize()
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
 })
 </script>
+
+<style lang="css">
+.ns-layout {
+  background-color: var(--ns-bg-base);
+}
+
+.ns-header {
+  background-color: var(--ns-bg-base) !important;
+  border-bottom: 1px solid var(--ns-border);
+  height: 56px;
+  color: var(--ns-text-primary);
+}
+
+.ns-sidebar {
+  background-color: var(--ns-bg-surface) !important;
+  border-right: 1px solid var(--ns-border);
+}
+
+.ns-sidebar-header {
+  height: 56px;
+  border-bottom: 1px solid var(--ns-border);
+}
+
+.ns-logomark {
+  color: var(--ns-accent);
+}
+
+.ns-wordmark {
+  font-family: var(--ns-font-sans);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  color: var(--ns-text-primary);
+}
+
+.ns-wordmark span {
+  color: var(--ns-accent);
+}
+
+.ns-global-search {
+  width: 100%;
+  max-width: 480px;
+}
+
+.ns-search-input .q-field__control {
+  font-family: var(--ns-font-mono);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+}
+
+.ns-status-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--ns-bg-elevated);
+  border: 1px solid var(--ns-border);
+  font-family: var(--ns-font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.ns-status-chip.is-connected { color: var(--ns-green); }
+.ns-status-chip.is-offline { color: var(--ns-red); }
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.ns-nav-list {
+  padding-top: 20px;
+}
+
+.ns-nav-item {
+  margin-bottom: 4px;
+  color: var(--ns-text-muted);
+  font-family: var(--ns-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  transition: var(--ns-transition);
+  min-height: 44px;
+}
+
+.ns-nav-item:hover {
+  background: var(--ns-accent-dim);
+  color: var(--ns-text-primary);
+}
+
+.ns-nav-active {
+  color: var(--ns-accent) !important;
+  background: var(--ns-accent-dim) !important;
+  border-left: 2px solid var(--ns-accent);
+}
+
+.ns-sidebar-footer {
+  border-top: 1px solid var(--ns-border);
+  background: var(--ns-bg-surface);
+}
+
+.ns-version {
+  font-family: var(--ns-font-mono);
+  font-size: 10px;
+  color: var(--ns-text-muted);
+}
+
+.ns-content-container {
+  background-image: radial-gradient(var(--ns-border) 1px, transparent 1px);
+  background-size: 24px 24px;
+  min-height: 100vh;
+}
+
+/* FADE TRANSITION */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 150ms ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

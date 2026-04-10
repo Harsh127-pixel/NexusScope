@@ -1,0 +1,56 @@
+:root {
+  /* BACKGROUNDS */
+  --ns-bg-base: #0D1117;
+  --ns-bg-surface: #131920;
+  --ns-bg-elevated: #1A2332;
+  --ns-bg-overlay: #1E2A3A;
+
+  /* BORDERS */
+  --ns-border: rgba(255, 255, 255, 0.08);
+  --ns-border-hover: rgba(255, 255, 255, 0.15);
+  --ns-border-active: #00D4AA;
+
+  /* TEXT COLORS */
+  --ns-text-primary: #FFFFFF;
+  --ns-text-secondary: #E0E4E8;
+  --ns-text-muted: #8B949E;
+  --ns-text-code: #00D4AA;
+
+  /* ACCENTS */
+  --ns-accent: #00D4AA;
+  --ns-accent-dim: rgba(0, 212, 170, 0.15);
+  --ns-accent-glow: 0 0 0 1px rgba(0, 212, 170, 0.2), 0 0 8px rgba(0, 212, 170, 0.1);
+
+  /* STATUS COLORS */
+  --ns-amber: #F5A623;
+  --ns-red: #E5534B;
+  --ns-green: #2ECC71;
+  --ns-blue: #3498DB;
+
+  /* RADIUS */
+  --ns-radius-sm: 4px;
+  --ns-radius-md: 8px;
+  --ns-radius-lg: 12px;
+
+  /* TYPOGRAPHY */
+  --ns-font-mono: 'IBM Plex Mono', monospace;
+  --ns-font-sans: 'IBM Plex Sans', sans-serif;
+
+  /* SPACING SCALE (4px steps) */
+  --ns-space-1: 4px;
+  --ns-space-2: 8px;
+  --ns-space-3: 12px;
+  --ns-space-4: 16px;
+  --ns-space-5: 20px;
+  --ns-space-6: 24px;
+  --ns-space-7: 28px;
+  --ns-space-8: 32px;
+
+  /* MOTION */
+  --ns-transition: 150ms ease;
+
+  /* SHADOWS (Flat Design Approach) */
+  --ns-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --ns-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.4);
+  --ns-shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.5);
+}

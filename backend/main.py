@@ -4,7 +4,7 @@ from app.api.endpoints import investigations, results
 from app.core.config import settings
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
+    title=settings.APP_NAME,
     version="1.0.0",
     description="NexusScope OSINT API Engine"
 )
@@ -24,4 +24,8 @@ app.include_router(results.router, prefix="/api/v1/results", tags=["Results"])
 
 @app.get("/")
 async def root():
-    return {"message": "NexusScope OSINT API is online", "status": "healthy"}
+    return {"message": "NexusScope OSINT API is online"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "version": "1.0.0"}
