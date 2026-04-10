@@ -703,10 +703,17 @@ async def _scrape_web(target: str, proxy: Optional[str], timeout: int, use_playw
             html = None
 
     if html is None:
-        async with _httpx_client(proxy=proxy, timeout=timeout) as client:
-            response = await client.get(url)
-            response.raise_for_status()
-            html = response.text
+        try:
+            async with _httpx_client(proxy=proxy, timeout=timeout) as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                html = response.text
+        except httpx.TimeoutException:
+            return {"url": url, "fetch_method": method, "error": f"Request timed out after {timeout} seconds"}
+        except httpx.HTTPError as e:
+            return {"url": url, "fetch_method": method, "error": f"HTTP Error: {str(e)}"}
+        except Exception as e:
+            return {"url": url, "fetch_method": method, "error": f"Connection failed: {str(e)}"}
 
     soup = BeautifulSoup(html, "lxml")
     title = soup.title.get_text(strip=True) if soup.title else None
@@ -1710,12 +1717,18 @@ async def _email_lookup(email: str) -> Dict[str, Any]:
 
 async def _image_metadata(image_url: str, proxy: Optional[str], timeout: int) -> Dict[str, Any]:
     target = _normalize_url(image_url)
-    async with _httpx_client(proxy=proxy, timeout=timeout) as client:
-        response = await client.get(target)
-        response.raise_for_status()
-        raw = response.content
-        content_type = response.headers.get("content-type", "unknown")
-        size_bytes = len(raw)
+    try:
+        async with _httpx_client(proxy=proxy, timeout=timeout) as client:
+            response = await client.get(target)
+            response.raise_for_status()
+            raw = response.content
+            content_type = response.headers.get("content-type", "unknown")
+            size_bytes = len(raw)
+    except Exception as e:
+        return {
+            "image_url": target,
+            "error": f"Failed to download image. {type(e).__name__}: {str(e)}"
+        }
 
     tags = {}
     try:
