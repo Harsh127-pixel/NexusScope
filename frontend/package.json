@@ -1,0 +1,34 @@
+{
+  "name": "nexus-scope-frontend",
+  "version": "0.0.1",
+  "description": "OSINT Digital Intelligence Aggregation Platform",
+  "productName": "NexusScope",
+  "author": "NexusScope Team",
+  "private": true,
+  "scripts": {
+    "dev": "quasar dev",
+    "build": "quasar build",
+    "lint": "eslint --ext .js,.vue ./",
+    "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
+    "test": "echo \"No tests defined\" && exit 0"
+  },
+  "dependencies": {
+    "@quasar/extras": "^1.16.4",
+    "axios": "^1.2.1",
+    "pinia": "^2.0.28",
+    "quasar": "^2.12.0",
+    "vue": "^3.2.45",
+    "vue-router": "^4.1.6"
+  },
+  "devDependencies": {
+    "@quasar/app-vite": "^1.3.0",
+    "@types/node": "^12.20.21",
+    "autoprefixer": "^10.4.13",
+    "postcss": "^8.4.21"
+  },
+  "engines": {
+    "node": "^18 || ^16 || ^14.19",
+    "npm": ">= 6.13.4",
+    "yarn": ">= 1.21.1"
+  }
+}
