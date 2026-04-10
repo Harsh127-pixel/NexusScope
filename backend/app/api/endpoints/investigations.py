@@ -1004,19 +1004,251 @@ async def _onion_crawler(onion_url: str) -> Dict[str, Any]:
 
 # ═══════════════════════════════════════════════════════════════════
 # THEATER 2 — GENERAL RECON & FOOTPRINTING: PHONE
-# Maps to: Skip Tracer, GASMask, Final Recon
+# Maps to: Skip Tracer, GASMask, Final Recon, PhoneInfoga
 # ═══════════════════════════════════════════════════════════════════
+
+# ── Indian telecom carrier/circle tables ─────────────────────────
+_INDIA_CARRIER_SERIES: Dict[str, Dict[str, str]] = {
+    # Jio series (4xxx, some 7xxx, 8xxx, 9xxx)
+    "6000": {"carrier": "Jio", "circle": "Delhi"},
+    "6001": {"carrier": "Jio", "circle": "Delhi"},
+    "6002": {"carrier": "Jio", "circle": "Mumbai"},
+    "6003": {"carrier": "Jio", "circle": "Maharashtra"},
+    "6004": {"carrier": "Jio", "circle": "Karnataka"},
+    "6005": {"carrier": "Jio", "circle": "Tamil Nadu"},
+    "6006": {"carrier": "Jio", "circle": "Andhra Pradesh"},
+    "6007": {"carrier": "Jio", "circle": "Gujarat"},
+    "6008": {"carrier": "Jio", "circle": "Rajasthan"},
+    "6009": {"carrier": "Jio", "circle": "Uttar Pradesh"},
+    "7000": {"carrier": "Jio", "circle": "West Bengal"},
+    "7001": {"carrier": "Jio", "circle": "Kerala"},
+    "7002": {"carrier": "Jio", "circle": "Odisha"},
+    "7003": {"carrier": "Jio", "circle": "Punjab"},
+    "7004": {"carrier": "Jio", "circle": "Bihar"},
+    "7005": {"carrier": "Jio", "circle": "Jharkhand"},
+    "7006": {"carrier": "Jio", "circle": "Assam"},
+    "7007": {"carrier": "Jio", "circle": "Jammu & Kashmir"},
+    "7008": {"carrier": "Jio", "circle": "Himachal Pradesh"},
+    "7009": {"carrier": "Jio", "circle": "North East"},
+    # Airtel series
+    "9800": {"carrier": "Airtel", "circle": "West Bengal"},
+    "9801": {"carrier": "Airtel", "circle": "Andhra Pradesh"},
+    "9802": {"carrier": "Airtel", "circle": "Uttarakhand"},
+    "9803": {"carrier": "Airtel", "circle": "Himachal Pradesh"},
+    "9870": {"carrier": "Airtel", "circle": "Delhi"},
+    "9871": {"carrier": "Airtel", "circle": "Delhi"},
+    "9818": {"carrier": "Airtel", "circle": "Delhi"},
+    "9910": {"carrier": "Airtel", "circle": "Delhi"},
+    "9999": {"carrier": "Airtel", "circle": "Delhi"},
+    "9953": {"carrier": "Airtel", "circle": "Delhi"},
+    "9958": {"carrier": "Airtel", "circle": "Delhi"},
+    "9891": {"carrier": "Airtel", "circle": "Delhi"},
+    "9821": {"carrier": "Airtel", "circle": "Mumbai"},
+    "9819": {"carrier": "Airtel", "circle": "Mumbai"},
+    "9320": {"carrier": "Airtel", "circle": "Mumbai"},
+    "9324": {"carrier": "Airtel", "circle": "Mumbai"},
+    "9773": {"carrier": "Airtel", "circle": "Maharashtra"},
+    "9881": {"carrier": "Airtel", "circle": "Maharashtra"},
+    "9886": {"carrier": "Airtel", "circle": "Karnataka"},
+    "9900": {"carrier": "Airtel", "circle": "Karnataka"},
+    "9842": {"carrier": "Airtel", "circle": "Tamil Nadu"},
+    "9944": {"carrier": "Airtel", "circle": "Tamil Nadu"},
+    "9414": {"carrier": "Airtel", "circle": "Rajasthan"},
+    "9887": {"carrier": "Airtel", "circle": "Rajasthan"},
+    "9824": {"carrier": "Airtel", "circle": "Gujarat"},
+    "9825": {"carrier": "Airtel", "circle": "Gujarat"},
+    # Vodafone/Vi series
+    "9820": {"carrier": "Vi (Vodafone Idea)", "circle": "Mumbai"},
+    "9930": {"carrier": "Vi (Vodafone Idea)", "circle": "Mumbai"},
+    "9867": {"carrier": "Vi (Vodafone Idea)", "circle": "Mumbai"},
+    "9819": {"carrier": "Vi (Vodafone Idea)", "circle": "Mumbai"},
+    "9833": {"carrier": "Vi (Vodafone Idea)", "circle": "Mumbai"},
+    "9811": {"carrier": "Vi (Vodafone Idea)", "circle": "Delhi"},
+    "9312": {"carrier": "Vi (Vodafone Idea)", "circle": "Delhi"},
+    "9717": {"carrier": "Vi (Vodafone Idea)", "circle": "Delhi"},
+    "9990": {"carrier": "Vi (Vodafone Idea)", "circle": "Delhi"},
+    "9886": {"carrier": "Vi (Vodafone Idea)", "circle": "Karnataka"},
+    "9916": {"carrier": "Vi (Vodafone Idea)", "circle": "Karnataka"},
+    # BSNL series
+    "9415": {"carrier": "BSNL", "circle": "Uttar Pradesh"},
+    "9451": {"carrier": "BSNL", "circle": "Uttar Pradesh"},
+    "9452": {"carrier": "BSNL", "circle": "Uttar Pradesh"},
+    "9453": {"carrier": "BSNL", "circle": "Uttar Pradesh"},
+    "9454": {"carrier": "BSNL", "circle": "Uttar Pradesh"},
+    "9455": {"carrier": "BSNL", "circle": "Uttar Pradesh"},
+    "9456": {"carrier": "BSNL", "circle": "Uttar Pradesh"},
+    "9457": {"carrier": "BSNL", "circle": "Uttar Pradesh"},
+    "9458": {"carrier": "BSNL", "circle": "Uttar Pradesh"},
+    "9459": {"carrier": "BSNL", "circle": "Uttar Pradesh"},
+    "9436": {"carrier": "BSNL", "circle": "North East"},
+    "9437": {"carrier": "BSNL", "circle": "Odisha"},
+    "9431": {"carrier": "BSNL", "circle": "Bihar"},
+    "9433": {"carrier": "BSNL", "circle": "West Bengal"},
+    "9434": {"carrier": "BSNL", "circle": "Assam"},
+}
+
+_INDIA_PREFIX_CARRIER: Dict[str, Dict[str, str]] = {
+    # Jio (reliance)
+    "700": {"carrier": "Jio", "line_type": "mobile"},
+    "701": {"carrier": "Jio", "line_type": "mobile"},
+    "702": {"carrier": "Jio", "line_type": "mobile"},
+    "703": {"carrier": "Jio", "line_type": "mobile"},
+    "704": {"carrier": "Jio", "line_type": "mobile"},
+    "705": {"carrier": "Jio", "line_type": "mobile"},
+    "706": {"carrier": "Jio", "line_type": "mobile"},
+    "707": {"carrier": "Jio", "line_type": "mobile"},
+    "708": {"carrier": "Jio", "line_type": "mobile"},
+    "709": {"carrier": "Jio", "line_type": "mobile"},
+    "600": {"carrier": "Jio", "line_type": "mobile"},
+    "601": {"carrier": "Jio", "line_type": "mobile"},
+    "602": {"carrier": "Jio", "line_type": "mobile"},
+    "603": {"carrier": "Jio", "line_type": "mobile"},
+    "604": {"carrier": "Jio", "line_type": "mobile"},
+    "605": {"carrier": "Jio", "line_type": "mobile"},
+    "606": {"carrier": "Jio", "line_type": "mobile"},
+    "607": {"carrier": "Jio", "line_type": "mobile"},
+    "608": {"carrier": "Jio", "line_type": "mobile"},
+    "609": {"carrier": "Jio", "line_type": "mobile"},
+    "800": {"carrier": "Jio", "line_type": "mobile"},
+    "801": {"carrier": "Jio", "line_type": "mobile"},
+    "802": {"carrier": "Jio", "line_type": "mobile"},
+    "803": {"carrier": "Jio", "line_type": "mobile"},
+    "804": {"carrier": "Jio", "line_type": "mobile"},
+    "805": {"carrier": "Jio", "line_type": "mobile"},
+    "806": {"carrier": "Jio", "line_type": "mobile"},
+    "807": {"carrier": "Jio", "line_type": "mobile"},
+    "808": {"carrier": "Jio", "line_type": "mobile"},
+    "809": {"carrier": "Jio", "line_type": "mobile"},
+    # Airtel
+    "620": {"carrier": "Airtel", "line_type": "mobile"},
+    "621": {"carrier": "Airtel", "line_type": "mobile"},
+    "622": {"carrier": "Airtel", "line_type": "mobile"},
+    "623": {"carrier": "Airtel", "line_type": "mobile"},
+    "624": {"carrier": "Airtel", "line_type": "mobile"},
+    "625": {"carrier": "Airtel", "line_type": "mobile"},
+    "626": {"carrier": "Airtel", "line_type": "mobile"},
+    "627": {"carrier": "Airtel", "line_type": "mobile"},
+    "628": {"carrier": "Airtel", "line_type": "mobile"},
+    "629": {"carrier": "Airtel", "line_type": "mobile"},
+    "720": {"carrier": "Airtel", "line_type": "mobile"},
+    "721": {"carrier": "Airtel", "line_type": "mobile"},
+    "730": {"carrier": "Airtel", "line_type": "mobile"},
+    "731": {"carrier": "Airtel", "line_type": "mobile"},
+    "740": {"carrier": "Airtel", "line_type": "mobile"},
+    "741": {"carrier": "Airtel", "line_type": "mobile"},
+    "742": {"carrier": "Airtel", "line_type": "mobile"},
+    "820": {"carrier": "Airtel", "line_type": "mobile"},
+    "821": {"carrier": "Airtel", "line_type": "mobile"},
+    "900": {"carrier": "Airtel", "line_type": "mobile"},
+    "901": {"carrier": "Airtel", "line_type": "mobile"},
+    "902": {"carrier": "Airtel", "line_type": "mobile"},
+    "903": {"carrier": "Airtel", "line_type": "mobile"},
+    "904": {"carrier": "Airtel", "line_type": "mobile"},
+    "905": {"carrier": "Airtel", "line_type": "mobile"},
+    "906": {"carrier": "Airtel", "line_type": "mobile"},
+    "907": {"carrier": "Airtel", "line_type": "mobile"},
+    "908": {"carrier": "Airtel", "line_type": "mobile"},
+    "909": {"carrier": "Airtel", "line_type": "mobile"},
+    "910": {"carrier": "Airtel", "line_type": "mobile"},
+    "911": {"carrier": "Airtel", "line_type": "mobile"},
+    "912": {"carrier": "Airtel", "line_type": "mobile"},
+    "913": {"carrier": "Airtel", "line_type": "mobile"},
+    "914": {"carrier": "Airtel", "line_type": "mobile"},
+    "915": {"carrier": "Airtel", "line_type": "mobile"},
+    "916": {"carrier": "Airtel", "line_type": "mobile"},
+    "917": {"carrier": "Airtel", "line_type": "mobile"},
+    "918": {"carrier": "Airtel", "line_type": "mobile"},
+    "919": {"carrier": "Airtel", "line_type": "mobile"},
+    "995": {"carrier": "Airtel", "line_type": "mobile"},
+    "996": {"carrier": "Airtel", "line_type": "mobile"},
+    "997": {"carrier": "Airtel", "line_type": "mobile"},
+    "998": {"carrier": "Airtel", "line_type": "mobile"},
+    "999": {"carrier": "Airtel", "line_type": "mobile"},
+    # Vi (Vodafone Idea)
+    "630": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "631": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "632": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "633": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "634": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "635": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "636": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "637": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "638": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "639": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "750": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "751": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "752": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "753": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "754": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "755": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "756": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "930": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "931": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "932": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "933": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "934": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "935": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "936": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "937": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "938": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "939": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "980": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "981": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "982": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "983": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "984": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "985": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "986": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "987": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "988": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    "989": {"carrier": "Vi (Vodafone Idea)", "line_type": "mobile"},
+    # BSNL
+    "940": {"carrier": "BSNL", "line_type": "mobile"},
+    "941": {"carrier": "BSNL", "line_type": "mobile"},
+    "942": {"carrier": "BSNL", "line_type": "mobile"},
+    "943": {"carrier": "BSNL", "line_type": "mobile"},
+    "944": {"carrier": "BSNL", "line_type": "mobile"},
+    "945": {"carrier": "BSNL", "line_type": "mobile"},
+    "946": {"carrier": "BSNL", "line_type": "mobile"},
+    "947": {"carrier": "BSNL", "line_type": "mobile"},
+    "948": {"carrier": "BSNL", "line_type": "mobile"},
+    "949": {"carrier": "BSNL", "line_type": "mobile"},
+    "700": {"carrier": "BSNL", "line_type": "mobile"},
+    # MTNL
+    "222": {"carrier": "MTNL", "line_type": "landline"},
+    "223": {"carrier": "MTNL", "line_type": "landline"},
+    "224": {"carrier": "MTNL", "line_type": "landline"},
+}
+
+
+def _detect_india_carrier(local_digits: str) -> Dict[str, str]:
+    """Detect Indian carrier and circle from the 10-digit local number."""
+    if len(local_digits) < 4:
+        return {}
+    series4 = local_digits[:4]
+    series3 = local_digits[:3]
+    if series4 in _INDIA_CARRIER_SERIES:
+        info = _INDIA_CARRIER_SERIES[series4]
+        return {"carrier": info["carrier"], "circle": info.get("circle"), "line_type": "mobile"}
+    if series3 in _INDIA_PREFIX_CARRIER:
+        info = _INDIA_PREFIX_CARRIER[series3]
+        return {"carrier": info["carrier"], "line_type": info.get("line_type", "mobile")}
+    return {}
+
 
 async def _phone_lookup(phone: str) -> Dict[str, Any]:
     """
-    Phone number carrier and line-type OSINT.
-    Uses NumVerify API if key is configured, falls back to free endpoint.
+    Comprehensive phone number OSINT:
+    - NumVerify API (paid, most accurate) when key is set
+    - Abstract API free phone validation
+    - Indian telecom carrier/circle detection (offline, always available for +91)
+    - Social media profile discovery via phone (WhatsApp link, Telegram, GitHub)
+    - Possible username patterns extracted from number
     """
     # Normalize: strip all non-digit characters except leading +
     cleaned = re.sub(r"[^\d+]", "", phone.strip())
     if not cleaned.startswith("+"):
         cleaned = f"+{cleaned}"
-
 
     result: Dict[str, Any] = {
         "input": phone,
@@ -1029,6 +1261,9 @@ async def _phone_lookup(phone: str) -> Dict[str, Any]:
         "valid": None,
         "is_mobile": None,
         "source": None,
+        "social_links": [],
+        "india_telecom": None,
+        "possible_usernames": [],
     }
 
     # ── NumVerify API (paid, accurate) ───────────────────────────
@@ -1043,24 +1278,23 @@ async def _phone_lookup(phone: str) -> Dict[str, Any]:
                     "format": "1",
                 })
                 data = resp.json()
-            result.update({
-                "valid": data.get("valid"),
-                "carrier": data.get("carrier"),
-                "line_type": data.get("line_type"),
-                "location": data.get("location"),
-                "country_code": data.get("country_code"),
-                "country_name": data.get("country_name"),
-                "is_mobile": data.get("line_type") == "mobile" if data.get("line_type") else None,
-                "local_format": data.get("local_format"),
-                "international_format": data.get("international_format"),
-                "source": "NumVerify API",
-            })
-            return result
+            if data.get("valid") is not False:
+                result.update({
+                    "valid": data.get("valid"),
+                    "carrier": data.get("carrier"),
+                    "line_type": data.get("line_type"),
+                    "location": data.get("location"),
+                    "country_code": data.get("country_code"),
+                    "country_name": data.get("country_name"),
+                    "is_mobile": data.get("line_type") == "mobile" if data.get("line_type") else None,
+                    "local_format": data.get("local_format"),
+                    "international_format": data.get("international_format"),
+                    "source": "NumVerify API",
+                })
         except Exception as exc:
             result["numverify_error"] = str(exc)
 
-    # ── Free fallback: phone region inference from E.164 ─────────
-    # Basic country code lookup from the leading digits
+    # ── Country prefix table (always runs, enriches missing fields) ──
     country_prefixes = {
         "+1": ("US/CA", "United States / Canada"),
         "+44": ("GB", "United Kingdom"),
@@ -1082,15 +1316,181 @@ async def _phone_lookup(phone: str) -> Dict[str, Any]:
         "+27": ("ZA", "South Africa"),
         "+52": ("MX", "Mexico"),
         "+65": ("SG", "Singapore"),
+        "+60": ("MY", "Malaysia"),
+        "+63": ("PH", "Philippines"),
+        "+62": ("ID", "Indonesia"),
+        "+92": ("PK", "Pakistan"),
+        "+880": ("BD", "Bangladesh"),
+        "+94": ("LK", "Sri Lanka"),
+        "+977": ("NP", "Nepal"),
+        "+98": ("IR", "Iran"),
+        "+90": ("TR", "Turkey"),
+        "+234": ("NG", "Nigeria"),
+        "+254": ("KE", "Kenya"),
+        "+255": ("TZ", "Tanzania"),
+        "+256": ("UG", "Uganda"),
+        "+263": ("ZW", "Zimbabwe"),
+        "+212": ("MA", "Morocco"),
+        "+216": ("TN", "Tunisia"),
+        "+213": ("DZ", "Algeria"),
+        "+64": ("NZ", "New Zealand"),
+        "+48": ("PL", "Poland"),
+        "+46": ("SE", "Sweden"),
+        "+47": ("NO", "Norway"),
+        "+45": ("DK", "Denmark"),
+        "+358": ("FI", "Finland"),
+        "+41": ("CH", "Switzerland"),
+        "+43": ("AT", "Austria"),
+        "+32": ("BE", "Belgium"),
+        "+351": ("PT", "Portugal"),
+        "+30": ("GR", "Greece"),
+        "+380": ("UA", "Ukraine"),
+        "+420": ("CZ", "Czech Republic"),
+        "+36": ("HU", "Hungary"),
+        "+40": ("RO", "Romania"),
+        "+359": ("BG", "Bulgaria"),
+        "+385": ("HR", "Croatia"),
+        "+381": ("RS", "Serbia"),
+        "+66": ("TH", "Thailand"),
+        "+84": ("VN", "Vietnam"),
+        "+95": ("MM", "Myanmar"),
+        "+856": ("LA", "Laos"),
+        "+855": ("KH", "Cambodia"),
+        "+886": ("TW", "Taiwan"),
+        "+852": ("HK", "Hong Kong"),
+        "+853": ("MO", "Macau"),
+        "+1242": ("BS", "Bahamas"),
+        "+1264": ("AI", "Anguilla"),
+        "+1268": ("AG", "Antigua and Barbuda"),
+        "+1284": ("VG", "British Virgin Islands"),
+        "+1345": ("KY", "Cayman Islands"),
+        "+1649": ("TC", "Turks and Caicos Islands"),
+        "+1758": ("LC", "Saint Lucia"),
+        "+1868": ("TT", "Trinidad and Tobago"),
+        "+54": ("AR", "Argentina"),
+        "+56": ("CL", "Chile"),
+        "+57": ("CO", "Colombia"),
+        "+51": ("PE", "Peru"),
+        "+58": ("VE", "Venezuela"),
+        "+593": ("EC", "Ecuador"),
+        "+591": ("BO", "Bolivia"),
+        "+595": ("PY", "Paraguay"),
+        "+598": ("UY", "Uruguay"),
     }
-    for prefix, (code, name) in sorted(country_prefixes.items(), key=lambda x: -len(x[0])):
-        if cleaned.startswith(prefix):
-            result.update({
-                "country_code": code,
-                "country_name": name,
-                "source": "offline prefix table (set NUMVERIFY_API_KEY for full data)",
-            })
-            break
+    detected_cc = result.get("country_code")
+    detected_cn = result.get("country_name")
+    if not detected_cc:
+        for prefix, cc_info in sorted(country_prefixes.items(), key=lambda x: -len(x[0])):
+            if cleaned.startswith(prefix):
+                if isinstance(cc_info, tuple):
+                    detected_cc, detected_cn = cc_info
+                else:
+                    detected_cc = list(cc_info)[0]
+                    detected_cn = list(cc_info)[1] if len(cc_info) > 1 else None
+                result.update({
+                    "country_code": detected_cc,
+                    "country_name": detected_cn,
+                })
+                if not result.get("source"):
+                    result["source"] = "offline prefix table"
+                break
+
+    # ── India-specific deep carrier detection ────────────────────
+    if cleaned.startswith("+91") and len(cleaned) == 13:
+        local = cleaned[3:]  # 10-digit local number
+        india_info = _detect_india_carrier(local)
+        if india_info:
+            result["india_telecom"] = {
+                "local_number": local,
+                "carrier": india_info.get("carrier"),
+                "circle": india_info.get("circle"),
+                "line_type": india_info.get("line_type", "mobile"),
+                "is_mobile": india_info.get("line_type", "mobile") == "mobile",
+                "whatsapp_link": f"https://wa.me/91{local}",
+                "note": "Carrier detected from TRAI series allocation table",
+            }
+            if not result.get("carrier"):
+                result["carrier"] = india_info.get("carrier")
+            if not result.get("line_type"):
+                result["line_type"] = india_info.get("line_type", "mobile")
+            if not result.get("location"):
+                result["location"] = india_info.get("circle")
+            result["is_mobile"] = india_info.get("line_type", "mobile") == "mobile"
+        else:
+            result["india_telecom"] = {
+                "local_number": local,
+                "whatsapp_link": f"https://wa.me/91{local}",
+                "note": "Number series not in local TRAI table; use NumVerify for accurate carrier.",
+            }
+
+    # ── Abstract API free phone validation (no key needed) ───────
+    ABSTRACT_API_KEY = os.getenv("ABSTRACT_API_KEY", "")
+    if ABSTRACT_API_KEY and not result.get("carrier"):
+        try:
+            async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+                resp = await client.get(
+                    "https://phonevalidation.abstractapi.com/v1/",
+                    params={"api_key": ABSTRACT_API_KEY, "phone": cleaned.lstrip("+")},
+                )
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("valid"):
+                    result.update({
+                        "valid": data.get("valid"),
+                        "carrier": data.get("carrier", {}).get("name"),
+                        "line_type": data.get("type"),
+                        "country_name": data.get("country", {}).get("name"),
+                        "location": data.get("location"),
+                        "is_mobile": data.get("type") in ("mobile", "mobile_or_landline"),
+                        "source": "Abstract API",
+                    })
+        except Exception:
+            pass
+
+    # ── Social media discovery links ─────────────────────────────
+    digits_only = cleaned.lstrip("+")
+    social_links = []
+
+    # WhatsApp check (universal)
+    social_links.append({
+        "platform": "WhatsApp",
+        "url": f"https://wa.me/{digits_only}",
+        "note": "Open chat to verify presence",
+    })
+
+    # Telegram (by phone) — only accessible via Telegram clients
+    social_links.append({
+        "platform": "Telegram",
+        "url": f"https://t.me/+{digits_only}",
+        "note": "Telegram resolves phone-to-username via client API",
+    })
+
+    # For Indian numbers, add Truecaller web search
+    if cleaned.startswith("+91"):
+        local = cleaned[3:]
+        social_links.append({
+            "platform": "Truecaller (web)",
+            "url": f"https://www.truecaller.com/search/in/{local}",
+            "note": "Requires Truecaller account to view full name",
+        })
+        social_links.append({
+            "platform": "India TRAI DND Registry",
+            "url": f"https://www.nccptrai.gov.in/nccpregistry/search.misc",
+            "note": "Check if number is on Do-Not-Disturb list",
+        })
+
+    result["social_links"] = social_links
+
+    # ── Possible username patterns ───────────────────────────────
+    # Generate common username patterns from last 4/6 digits (often used by users)
+    last4 = digits_only[-4:] if len(digits_only) >= 4 else digits_only
+    last6 = digits_only[-6:] if len(digits_only) >= 6 else digits_only
+    result["possible_usernames"] = [
+        f"user{last4}",
+        f"user{last6}",
+        last4,
+        last6,
+    ]
 
     result["valid"] = bool(re.match(r"^\+[1-9]\d{6,14}$", cleaned))
     return result
@@ -1098,33 +1498,116 @@ async def _phone_lookup(phone: str) -> Dict[str, Any]:
 
 # ═══════════════════════════════════════════════════════════════════
 # THEATER 3 — IDENTITY & CREDENTIAL HUNTING
-# Maps to: h8mail, OSINT-SPY
+# Maps to: h8mail, OSINT-SPY, Sherlock, Social Mapper
 # ═══════════════════════════════════════════════════════════════════
 
 async def _email_lookup(email: str) -> Dict[str, Any]:
     """
-    Email identity and breach intelligence:
-    - Gravatar profile (display name, avatar, accounts linked)
-    - HaveIBeenPwned breach check (requires HIBP_API_KEY)
-    - Basic MX record validation for domain
+    Comprehensive email identity OSINT:
+    - Gravatar profile (display name, avatar, linked social accounts)
+    - GitHub user search by email (public API)
+    - Username extraction and multi-platform recon
+    - HaveIBeenPwned breach and paste lookup (requires HIBP_API_KEY)
+    - MX record validation
+    - Social media discovery links
     """
     email = email.strip().lower()
+    local_part = email.split("@")[0] if "@" in email else email
     domain = email.split("@")[-1] if "@" in email else ""
 
     result: Dict[str, Any] = {
         "email": email,
         "domain": domain,
+        "local_part": local_part,
         "gravatar": None,
+        "github_users": [],
+        "username_recon": None,
         "breaches": None,
         "pastes": None,
         "mx_records": None,
         "breach_count": 0,
         "paste_count": 0,
+        "social_links": [],
+        "extracted_usernames": [],
     }
+
+    # ── Username patterns extracted from email local part ────────
+    # e.g. john.doe@gmail.com → ["johndoe", "john.doe", "john_doe", "john", "doe"]
+    raw = local_part
+    parts = re.split(r"[._\-+]", raw)
+    candidates: List[str] = list(dict.fromkeys(filter(None, [
+        raw,
+        re.sub(r"[._\-+]", "", raw),
+        re.sub(r"[._\-+]", "_", raw),
+        re.sub(r"[._\-+]", ".", raw),
+        parts[0] if parts else None,
+        "".join(parts) if len(parts) > 1 else None,
+    ])))
+    result["extracted_usernames"] = candidates
+
+    # ── Social media discovery links from email ──────────────────
+    email_hash = hashlib.md5(email.encode("utf-8")).hexdigest()  # noqa: S324
+    social_links = [
+        {"platform": "Gravatar", "url": f"https://www.gravatar.com/{email_hash}", "note": "Profile if registered"},
+        {"platform": "Google", "url": f"https://accounts.google.com/SignIn?Email={email}", "note": "Gmail account hint"},
+    ]
+    # Add username-based social links for the primary extracted username
+    if candidates:
+        primary = candidates[0]
+        social_links += [
+            {"platform": "GitHub", "url": f"https://github.com/{primary}", "note": "Check GitHub profile"},
+            {"platform": "Twitter/X", "url": f"https://x.com/{primary}", "note": "Check Twitter/X profile"},
+            {"platform": "Instagram", "url": f"https://www.instagram.com/{primary}/", "note": "Check Instagram profile"},
+            {"platform": "LinkedIn", "url": f"https://www.linkedin.com/search/results/all/?keywords={primary}", "note": "LinkedIn search"},
+            {"platform": "Reddit", "url": f"https://www.reddit.com/user/{primary}", "note": "Check Reddit profile"},
+            {"platform": "Facebook", "url": f"https://www.facebook.com/search/top/?q={email}", "note": "Facebook search by email"},
+            {"platform": "Telegram", "url": f"https://t.me/{primary}", "note": "Telegram username check"},
+            {"platform": "Pinterest", "url": f"https://www.pinterest.com/{primary}/", "note": "Pinterest profile"},
+            {"platform": "YouTube", "url": f"https://www.youtube.com/@{primary}", "note": "YouTube channel check"},
+            {"platform": "TikTok", "url": f"https://www.tiktok.com/@{primary}", "note": "TikTok profile check"},
+            {"platform": "Medium", "url": f"https://medium.com/@{primary}", "note": "Medium profile check"},
+            {"platform": "Dev.to", "url": f"https://dev.to/{primary}", "note": "Dev.to profile check"},
+            {"platform": "Quora", "url": f"https://www.quora.com/profile/{primary}", "note": "Quora profile check"},
+        ]
+    result["social_links"] = social_links
+
+    # ── GitHub user search by email ──────────────────────────────
+    try:
+        github_headers = {
+            "User-Agent": "NexusScope-OSINT/2.0",
+            "Accept": "application/vnd.github.v3+json",
+        }
+        GITHUB_TOKEN = os.getenv("GITHUB_TOKEN", "")
+        if GITHUB_TOKEN:
+            github_headers["Authorization"] = f"token {GITHUB_TOKEN}"
+        async with httpx.AsyncClient(timeout=10, follow_redirects=True, headers=github_headers) as client:
+            gh_resp = await client.get(
+                "https://api.github.com/search/users",
+                params={"q": f"{email} in:email", "per_page": 5},
+            )
+        if gh_resp.status_code == 200:
+            gh_data = gh_resp.json()
+            result["github_users"] = [
+                {
+                    "username": u.get("login"),
+                    "profile_url": u.get("html_url"),
+                    "avatar_url": u.get("avatar_url"),
+                    "type": u.get("type"),
+                }
+                for u in gh_data.get("items", [])
+            ]
+    except Exception as exc:
+        result["github_search_error"] = str(exc)
+
+    # ── Username recon: run multi-platform lookup on primary username ─
+    if candidates:
+        try:
+            result["username_recon"] = await _username_lookup(candidates[0], proxy=None, timeout=12)
+        except Exception as exc:
+            result["username_recon_error"] = str(exc)
 
     # ── Gravatar profile ─────────────────────────────────────────
     try:
-        email_hash = hashlib.md5(email.encode("utf-8")).hexdigest()  # noqa: S324
         gravatar_url = f"https://www.gravatar.com/{email_hash}.json"
         async with httpx.AsyncClient(timeout=8, follow_redirects=True, headers={"User-Agent": _pick_user_agent()}) as client:
             resp = await client.get(gravatar_url)

@@ -418,20 +418,26 @@
           </div>
         </div>
 
-        <div class="row q-col-gutter-md">
+        <!-- Summary row -->
+        <div class="row q-col-gutter-md q-mb-lg">
           <div class="col-12 col-md-4">
             <q-card flat class="ns-report-block q-pa-md">
               <div class="ns-label q-mb-sm">NUMBER DETAILS</div>
               <div class="column q-gutter-y-xs text-mono">
                 <div><span class="ns-muted">INPUT:</span> {{ currentTask?.result?.input }}</div>
                 <div><span class="ns-muted">NORMALIZED:</span> {{ currentTask?.result?.normalized }}</div>
-                <div>
+                <div class="row items-center q-gutter-x-xs">
                   <span class="ns-muted">VALID:</span>
                   <q-badge :color="currentTask?.result?.valid ? 'positive' : 'negative'">
                     {{ currentTask?.result?.valid ? 'YES' : 'NO' }}
                   </q-badge>
                 </div>
-                <div><span class="ns-muted">IS MOBILE:</span> {{ currentTask?.result?.is_mobile ?? 'UNKNOWN' }}</div>
+                <div>
+                  <span class="ns-muted">IS MOBILE:</span>
+                  <q-badge :color="currentTask?.result?.is_mobile ? 'positive' : 'grey'" class="q-ml-xs">
+                    {{ currentTask?.result?.is_mobile === true ? 'YES' : currentTask?.result?.is_mobile === false ? 'NO' : 'UNKNOWN' }}
+                  </q-badge>
+                </div>
               </div>
             </q-card>
           </div>
@@ -439,9 +445,11 @@
             <q-card flat class="ns-report-block q-pa-md">
               <div class="ns-label q-mb-sm">CARRIER DATA</div>
               <div class="column q-gutter-y-xs text-mono">
-                <div><span class="ns-muted">CARRIER:</span> {{ currentTask?.result?.carrier || 'N/A' }}</div>
+                <div><span class="ns-muted">CARRIER:</span> <span class="text-white">{{ currentTask?.result?.carrier || 'N/A' }}</span></div>
                 <div><span class="ns-muted">LINE TYPE:</span> {{ currentTask?.result?.line_type || 'N/A' }}</div>
                 <div><span class="ns-muted">LOCATION:</span> {{ currentTask?.result?.location || 'N/A' }}</div>
+                <div v-if="currentTask?.result?.local_format"><span class="ns-muted">LOCAL FMT:</span> {{ currentTask?.result?.local_format }}</div>
+                <div><span class="ns-muted">DATA SOURCE:</span> {{ currentTask?.result?.source || 'offline prefix table' }}</div>
               </div>
             </q-card>
           </div>
@@ -449,11 +457,67 @@
             <q-card flat class="ns-report-block q-pa-md">
               <div class="ns-label q-mb-sm">GEO ORIGIN</div>
               <div class="column q-gutter-y-xs text-mono">
-                <div><span class="ns-muted">COUNTRY CODE:</span> {{ currentTask?.result?.country_code || 'N/A' }}</div>
+                <div><span class="ns-muted">COUNTRY CODE:</span> <span class="text-white text-weight-bold">{{ currentTask?.result?.country_code || 'N/A' }}</span></div>
                 <div><span class="ns-muted">COUNTRY:</span> {{ currentTask?.result?.country_name || 'N/A' }}</div>
-                <div><span class="ns-muted">SOURCE:</span> {{ currentTask?.result?.source || 'N/A' }}</div>
               </div>
             </q-card>
+          </div>
+        </div>
+
+        <!-- India Telecom -->
+        <div v-if="currentTask?.result?.india_telecom" class="q-mb-lg">
+          <div class="ns-label q-mb-sm" style="color:#38bdf8">INDIA TELECOM INTELLIGENCE (TRAI)</div>
+          <q-card flat class="ns-report-block q-pa-md" style="border-left: 3px solid #38bdf8">
+            <div class="row q-col-gutter-md">
+              <div class="col-12 col-sm-6 col-md-3">
+                <div class="ns-muted text-caption">LOCAL NUMBER</div>
+                <div class="text-white text-mono text-weight-bold">{{ currentTask?.result?.india_telecom?.local_number }}</div>
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <div class="ns-muted text-caption">CARRIER</div>
+                <div class="text-white text-mono">{{ currentTask?.result?.india_telecom?.carrier || 'Unknown' }}</div>
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <div class="ns-muted text-caption">CIRCLE / STATE</div>
+                <div class="text-white text-mono">{{ currentTask?.result?.india_telecom?.circle || 'Unknown' }}</div>
+              </div>
+              <div class="col-12 col-sm-6 col-md-3">
+                <div class="ns-muted text-caption">LINE TYPE</div>
+                <div class="text-mono"><q-badge color="positive">{{ currentTask?.result?.india_telecom?.line_type?.toUpperCase() || 'MOBILE' }}</q-badge></div>
+              </div>
+            </div>
+            <div class="ns-muted text-caption q-mt-sm">{{ currentTask?.result?.india_telecom?.note }}</div>
+          </q-card>
+        </div>
+
+        <!-- Social Media Links -->
+        <div v-if="currentTask?.result?.social_links?.length" class="q-mb-lg">
+          <div class="ns-label q-mb-sm">SOCIAL PLATFORM DISCOVERY LINKS</div>
+          <div class="row q-gutter-sm">
+            <a
+              v-for="link in currentTask?.result?.social_links"
+              :key="link.platform"
+              :href="link.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="ns-social-chip"
+            >
+              <ExternalLink :size="12" class="q-mr-xs" />{{ link.platform }}
+              <q-tooltip>{{ link.note }}</q-tooltip>
+            </a>
+          </div>
+        </div>
+
+        <!-- Possible Usernames -->
+        <div v-if="currentTask?.result?.possible_usernames?.length" class="q-mb-lg">
+          <div class="ns-label q-mb-sm">INFERRED USERNAME PATTERNS</div>
+          <div class="row q-gutter-sm">
+            <q-chip
+              v-for="u in currentTask?.result?.possible_usernames"
+              :key="u"
+              dense color="dark" text-color="white"
+              class="text-mono"
+            >{{ u }}</q-chip>
           </div>
         </div>
       </section>
@@ -478,6 +542,7 @@
               <div class="column q-gutter-y-xs text-mono">
                 <div><span class="ns-muted">EMAIL:</span> {{ currentTask?.result?.email }}</div>
                 <div><span class="ns-muted">DOMAIN:</span> {{ currentTask?.result?.domain }}</div>
+                <div><span class="ns-muted">LOCAL PART:</span> {{ currentTask?.result?.local_part }}</div>
                 <div>
                   <span class="ns-muted">MX RECORDS:</span>
                   <span :class="currentTask?.result?.mx_records?.length ? 'text-positive' : 'text-warning'">
@@ -516,13 +581,13 @@
               <div class="column q-gutter-y-xs text-mono">
                 <div v-if="currentTask?.result?.breaches !== null">
                   <span class="ns-muted">BREACHES:</span>
-                  <span :class="currentTask?.result?.breach_count > 0 ? 'text-negative' : 'text-positive'" class="text-weight-bold">
+                  <span :class="currentTask?.result?.breach_count > 0 ? 'text-negative' : 'text-positive'" class="text-weight-bold q-ml-xs">
                     {{ currentTask?.result?.breach_count ?? 0 }}
                   </span>
                 </div>
                 <div v-if="currentTask?.result?.paste_count !== undefined">
                   <span class="ns-muted">PASTES:</span>
-                  <span :class="currentTask?.result?.paste_count > 0 ? 'text-warning' : 'text-positive'">
+                  <span :class="currentTask?.result?.paste_count > 0 ? 'text-warning' : 'text-positive'" class="q-ml-xs">
                     {{ currentTask?.result?.paste_count }}
                   </span>
                 </div>
@@ -531,6 +596,89 @@
                 </div>
               </div>
             </q-card>
+          </div>
+        </div>
+
+        <!-- Extracted Usernames -->
+        <div v-if="currentTask?.result?.extracted_usernames?.length" class="q-mb-lg">
+          <div class="ns-label q-mb-sm">EXTRACTED USERNAME CANDIDATES</div>
+          <div class="row q-gutter-sm">
+            <q-chip
+              v-for="u in currentTask?.result?.extracted_usernames"
+              :key="u"
+              dense color="dark" text-color="white"
+              class="text-mono"
+            >{{ u }}</q-chip>
+          </div>
+        </div>
+
+        <!-- GitHub Users found by email -->
+        <div v-if="currentTask?.result?.github_users?.length" class="q-mb-lg">
+          <div class="ns-label q-mb-sm" style="color:#2ea043">GITHUB PROFILES (matched by email)</div>
+          <div class="row q-gutter-sm">
+            <a
+              v-for="gu in currentTask?.result?.github_users"
+              :key="gu.username"
+              :href="gu.profile_url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="ns-gh-profile-chip"
+            >
+              <img v-if="gu.avatar_url" :src="gu.avatar_url" class="gh-avatar" :alt="gu.username" />
+              <span>{{ gu.username }}</span>
+              <ExternalLink :size="11" class="q-ml-xs" />
+            </a>
+          </div>
+        </div>
+
+        <!-- Username recon results -->
+        <div v-if="currentTask?.result?.username_recon?.platforms?.length" class="q-mb-lg">
+          <div class="ns-label q-mb-sm">
+            USERNAME RECON — <span class="text-white">{{ currentTask?.result?.username_recon?.username }}</span>
+            <span class="ns-muted q-ml-sm">
+              {{ currentTask?.result?.username_recon?.profiles_found }}/{{ currentTask?.result?.username_recon?.platforms_checked }} platforms found
+            </span>
+          </div>
+          <div class="row q-col-gutter-sm">
+            <div
+              v-for="platform in currentTask?.result?.username_recon?.platforms"
+              :key="platform.platform"
+              class="col-12 col-sm-6 col-md-4 col-lg-3"
+            >
+              <q-card flat class="ns-report-block q-pa-sm" :style="platform.profile_found ? 'border-left: 2px solid #14b8a6' : ''">
+                <div class="row items-center justify-between q-mb-xs">
+                  <span class="text-weight-medium text-caption text-white">{{ platform.platform }}</span>
+                  <q-badge :color="platform.profile_found ? 'positive' : 'grey'" class="ns-label" style="font-size: 8px">
+                    {{ platform.profile_found ? 'FOUND' : 'NOT FOUND' }}
+                  </q-badge>
+                </div>
+                <div v-if="platform.profile_found" class="column q-gutter-y-xs text-mono" style="font-size: 11px">
+                  <div v-if="platform.display_name" class="text-white">{{ platform.display_name }}</div>
+                  <a :href="platform.url" target="_blank" rel="noopener" class="text-info ellipsis" style="font-size: 10px">
+                    {{ platform.url }}
+                  </a>
+                </div>
+                <div v-else class="ns-muted text-caption text-mono">No public profile</div>
+              </q-card>
+            </div>
+          </div>
+        </div>
+
+        <!-- Social Discovery Links -->
+        <div v-if="currentTask?.result?.social_links?.length" class="q-mb-lg">
+          <div class="ns-label q-mb-sm">SOCIAL PLATFORM DISCOVERY LINKS</div>
+          <div class="row q-gutter-sm flex-wrap">
+            <a
+              v-for="link in currentTask?.result?.social_links"
+              :key="link.platform"
+              :href="link.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="ns-social-chip"
+            >
+              <ExternalLink :size="12" class="q-mr-xs" />{{ link.platform }}
+              <q-tooltip>{{ link.note }}</q-tooltip>
+            </a>
           </div>
         </div>
 
@@ -570,15 +718,16 @@
         <div v-if="currentTask?.result?.gravatar?.accounts?.length" class="q-mb-lg">
           <div class="ns-label q-mb-sm">LINKED ACCOUNTS (via Gravatar)</div>
           <div class="row q-gutter-sm">
-            <q-chip
+            <a
               v-for="acc in currentTask?.result?.gravatar?.accounts"
               :key="acc.shortname"
               :href="acc.url"
               target="_blank"
-              clickable
-              color="bg-surface" text-color="primary"
-              icon="link"
-            >{{ acc.shortname }}</q-chip>
+              rel="noopener noreferrer"
+              class="ns-social-chip"
+            >
+              <ExternalLink :size="12" class="q-mr-xs" />{{ acc.shortname }}
+            </a>
           </div>
         </div>
       </section>
@@ -875,7 +1024,7 @@ import { useResultsStore } from 'src/stores/resultsStore'
 import { useQuasar, copyToClipboard, QTableProps } from 'quasar'
 import {
   Target, User, Globe, MapPin, FileSearch,
-  Navigation, Code, Layers, Search, Eye, Phone, Mail, Shield
+  Navigation, Code, Layers, Search, Eye, Phone, Mail, Shield, ExternalLink
 } from 'lucide-vue-next'
 import VueJsonPretty from 'vue-json-pretty'
 import 'vue-json-pretty/lib/styles.css'
@@ -1143,4 +1292,54 @@ const onJsonNodeClick = (path: string) => {
 :deep(.vjs-tree) { border: none !important; }
 :deep(.vjs-value__string) { color: var(--ns-accent); }
 :deep(.vjs-key) { color: #fff; }
+
+/* Social platform discovery chips */
+.ns-social-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--ns-bg-elevated);
+  border: 1px solid var(--ns-border);
+  color: var(--ns-text-secondary);
+  font-family: var(--ns-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+.ns-social-chip:hover {
+  border-color: var(--ns-accent);
+  color: var(--ns-accent);
+  background: var(--ns-accent-dim);
+}
+
+/* GitHub profile chip */
+.ns-gh-profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: var(--ns-bg-elevated);
+  border: 1px solid rgba(46,160,67,0.4);
+  color: var(--ns-text-secondary);
+  font-family: var(--ns-font-mono);
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.ns-gh-profile-chip:hover {
+  border-color: #2ea043;
+  color: #7ee787;
+  background: rgba(46,160,67,0.1);
+}
+.gh-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+}
 </style>
