@@ -1,11 +1,18 @@
 import time
 from celery_app import celery_app
-from shared.schemas import InvestigationTask
 import dns.resolver
 from bs4 import BeautifulSoup
-import requests
+import httpx
 import exifread
+from urllib.parse import urlparse
 # from playwright.sync_api import sync_playwright # Uncomment in worker Dockerfile after install
+
+
+def _normalize_url(target: str) -> str:
+    parsed = urlparse(target)
+    if not parsed.scheme:
+        return f"https://{target}"
+    return target
 
 @celery_app.task(name="tasks.perform_dns_lookup")
 def perform_dns_lookup(domain: str):
@@ -26,11 +33,13 @@ def perform_dns_lookup(domain: str):
 def scrape_web_intelligence(url: str):
     """Scrape web metadata and technology stack."""
     try:
-        response = requests.get(url, timeout=10)
+        normalized_url = _normalize_url(url)
+        response = httpx.get(normalized_url, timeout=10, follow_redirects=True)
+        response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
         
         return {
-            "url": url,
+            "url": normalized_url,
             "title": soup.title.string if soup.title else "No Title",
             "meta_description": soup.find("meta", attrs={"name": "description"}).get("content", "") if soup.find("meta", attrs={"name": "description"}) else "",
             "server": response.headers.get("Server", "Unknown")

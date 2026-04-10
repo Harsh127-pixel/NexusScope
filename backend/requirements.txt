@@ -6,6 +6,7 @@
 # ── API Framework ─────────────────────────────
 fastapi
 uvicorn[standard]
+gunicorn
 python-multipart
 
 # ── Data Validation ───────────────────────────
@@ -33,6 +34,9 @@ lxml          # fast HTML parser backend for bs4
 
 # ── Browser Automation (Playwright skeleton) ──
 playwright   # run: playwright install chromium
+
+# ── CLI Rendering / Progress UI ───────────────
+rich
 
 # ── Task Queue (Celery-ready) ─────────────────
 celery

@@ -60,6 +60,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from firebase_admin import auth as firebase_auth
 from firebase_admin import credentials
 from pydantic import BaseModel, Field
+from app.api.endpoints.investigations import router as investigations_router
 
 # ── Logging ───────────────────────────────────
 logging.basicConfig(
@@ -393,6 +394,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(investigations_router, prefix="/api/v1", tags=["Investigations"])
 
 
 # ──────────────────────────────────────────────

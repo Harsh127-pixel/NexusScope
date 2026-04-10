@@ -86,8 +86,10 @@ class ApiService {
 
   async createTask(module: string, target: string, options: Record<string, any> = {}): Promise<{ task_id: string }> {
     const { data } = await this.axiosInstance.post('/api/v1/investigations', {
+      module,
       type: module,
       target,
+      proxy: options.proxy,
       options,
     });
     return data;

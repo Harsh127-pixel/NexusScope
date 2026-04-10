@@ -75,6 +75,12 @@
               <div class="col-12 col-sm-6">
                 <q-checkbox v-model="investigation.useProxy" label="USE TOR EXIT NODES" dark color="primary" class="ns-label" />
               </div>
+              <div class="col-12 col-sm-6">
+                <q-checkbox v-model="investigation.usePlaywright" label="USE PLAYWRIGHT RENDER" dark color="primary" class="ns-label" />
+              </div>
+              <div class="col-12 col-sm-6" v-if="investigation.useProxy">
+                <q-input v-model="investigation.proxy" filled label="PROXY URL" placeholder="http://user:pass@host:port" label-color="muted" />
+              </div>
             </div>
           </q-slide-transition>
 
@@ -101,8 +107,8 @@
             <div class="text-mono text-caption q-gutter-y-xs">
               <div class="text-positive">[SUCCESS] Signal established with Task Broker</div>
               <div class="text-white">investigation_id: {{ investigationId }}</div>
-              <div class="text-white">target_acquired: {{ investigation.target }}</div>
-              <div class="text-white">module_deploying: {{ investigation.module }}...</div>
+              <div class="text-white">target_acquired: {{ searchStore.targetInput }}</div>
+              <div class="text-white">module_deploying: {{ searchStore.selectedModule }}...</div>
               <div class="text-blue animate-pulse q-mt-md">Waiting for worker telemetry...</div>
             </div>
             <q-btn 
@@ -135,6 +141,13 @@ const searchStore = useSearchStore()
 const submitted = ref(false)
 const showAdvanced = ref(false)
 const investigationId = ref('')
+const defaultProxy = import.meta.env.VITE_DEFAULT_PROXY || ''
+const investigation = reactive({
+  timeout: 12,
+  useProxy: false,
+  proxy: defaultProxy,
+  usePlaywright: false,
+})
 
 onMounted(() => {
   if (route.query.module) {
@@ -145,7 +158,11 @@ onMounted(() => {
 
 const startInvestigation = async () => {
   try {
-    const id = await searchStore.dispatchQuery()
+    const id = await searchStore.dispatchQuery({
+      timeout: Number(investigation.timeout) || 12,
+      use_playwright: investigation.usePlaywright,
+      proxy: investigation.useProxy ? investigation.proxy : undefined,
+    })
     investigationId.value = id
     submitted.value = true
     

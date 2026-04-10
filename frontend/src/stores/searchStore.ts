@@ -30,11 +30,11 @@ export const useSearchStore = defineStore('search', () => {
     targetInput.value = value;
   }
 
-  async function dispatchQuery() {
+  async function dispatchQuery(options: Record<string, any> = {}) {
     isDispatching.value = true;
     lastError.value = null;
     try {
-      const response = await apiService.createTask(selectedModule.value, targetInput.value);
+      const response = await apiService.createTask(selectedModule.value, targetInput.value, options);
       lastTaskId.value = response.task_id;
       appStore.incrementActiveTaskCount();
       return response.task_id;
