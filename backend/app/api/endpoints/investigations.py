@@ -1213,7 +1213,6 @@ _INDIA_PREFIX_CARRIER: Dict[str, Dict[str, str]] = {
     "947": {"carrier": "BSNL", "line_type": "mobile"},
     "948": {"carrier": "BSNL", "line_type": "mobile"},
     "949": {"carrier": "BSNL", "line_type": "mobile"},
-    "700": {"carrier": "BSNL", "line_type": "mobile"},
     # MTNL
     "222": {"carrier": "MTNL", "line_type": "landline"},
     "223": {"carrier": "MTNL", "line_type": "landline"},
@@ -1382,11 +1381,7 @@ async def _phone_lookup(phone: str) -> Dict[str, Any]:
     if not detected_cc:
         for prefix, cc_info in sorted(country_prefixes.items(), key=lambda x: -len(x[0])):
             if cleaned.startswith(prefix):
-                if isinstance(cc_info, tuple):
-                    detected_cc, detected_cn = cc_info
-                else:
-                    detected_cc = list(cc_info)[0]
-                    detected_cn = list(cc_info)[1] if len(cc_info) > 1 else None
+                detected_cc, detected_cn = cc_info
                 result.update({
                     "country_code": detected_cc,
                     "country_name": detected_cn,

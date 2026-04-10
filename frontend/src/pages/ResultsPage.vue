@@ -13,7 +13,7 @@
           <div 
             class="ns-heading-md text-white cursor-pointer hover-accent" 
             @click="copyTaskId"
-            style="word-break: break-all; max-width: 280px"
+            style="word-break: break-word; overflow-wrap: break-word; max-width: 280px"
           >
             {{ taskId }}
             <q-tooltip>CLICK TO COPY TASK ID</q-tooltip>
@@ -36,7 +36,7 @@
       </div>
 
       <div class="row q-gutter-xs flex-wrap" v-if="currentTask?.status === 'completed'">
-        <q-btn v-if="$q.screen.gt.xs" flat class="ns-btn-secondary" icon="print" label="PRINT" @click="printReport" />
+        <q-btn flat class="ns-btn-secondary" icon="print" :label="$q.screen.gt.sm ? 'PRINT' : ''" @click="printReport" />
         <q-btn flat class="ns-btn-secondary" icon="download" :label="$q.screen.gt.xs ? 'EXPORT JSON' : ''" @click="exportJson" />
         <q-btn flat class="ns-btn-secondary" icon="content_copy" :label="$q.screen.gt.xs ? 'COPY RAW' : ''" @click="copyRaw" />
         <q-btn color="primary" icon="add" :label="$q.screen.gt.xs ? 'NEW SEARCH' : ''" to="/search" />
