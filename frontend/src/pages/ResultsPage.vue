@@ -756,7 +756,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useResultsStore } from 'src/stores/resultsStore'
-import { useQuasar, copyToClipboard } from 'quasar'
+import { useQuasar, copyToClipboard, QTableProps } from 'quasar'
 import {
   Target, User, Globe, MapPin, FileSearch,
   Navigation, Code, Layers, Search, Eye, Phone, Mail, Shield
@@ -843,9 +843,9 @@ const dnsParameterEntries = computed(() => {
 const hasMapData = computed(() => !!currentTask.value?.result?.location)
 
 const tableData = computed(() => [currentTask.value?.result])
-const tableColumns = [
-  { name: 'field', label: 'FIELD', field: (row: any) => Object.keys(row)[0], align: 'left' as const, classes: 'ns-label' },
-  { name: 'value', label: 'VALUE', field: (row: any) => Object.values(row)[0], align: 'left' as const }
+const tableColumns: QTableProps['columns'] = [
+  { name: 'field', label: 'FIELD', field: (row: any) => Object.keys(row)[0], align: 'left', classes: 'ns-label' },
+  { name: 'value', label: 'VALUE', field: (row: any) => Object.values(row)[0], align: 'left' }
 ]
 
 // Map Initialization

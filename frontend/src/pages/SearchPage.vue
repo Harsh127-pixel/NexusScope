@@ -296,7 +296,7 @@ onMounted(async () => {
   // Ping backend to check Tor status (best-effort)
   try {
     const res = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'}/health`
+      `${import.meta.env.VITE_API_BASE_URL || 'https://nexusscope-backend.onrender.com'}/health`
     )
     if (res.ok) torOnline.value = false // Real check happens on-demand in backend
   } catch {
