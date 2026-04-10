@@ -89,6 +89,8 @@ TELEGRAM_BOT_TOKEN: str = os.environ.get("TELEGRAM_BOT_TOKEN", "REPLACE_WITH_BOT
 WHATSAPP_VERIFY_TOKEN: str = os.environ.get("WHATSAPP_VERIFY_TOKEN", "REPLACE_WITH_VERIFY_TOKEN")
 WHATSAPP_ACCESS_TOKEN: str = os.environ.get("WHATSAPP_ACCESS_TOKEN", "REPLACE_WITH_ACCESS_TOKEN")
 WHATSAPP_PHONE_NUMBER_ID: str = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "REPLACE_WITH_PHONE_ID")
+API_HOST: str = os.environ.get("API_HOST", "127.0.0.1")
+API_PORT: int = int(os.environ.get("API_PORT", "8000"))
 
 # HTTP timeout for outbound requests (seconds)
 HTTP_TIMEOUT: float = float(os.environ.get("HTTP_TIMEOUT", "12.0"))
@@ -1201,8 +1203,8 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "main:app",
-        host="0.0.0.0",
-        port=8000,
+        host=API_HOST,
+        port=API_PORT,
         reload=True,          # Set to False in production
         log_level="info",
         access_log=True,
