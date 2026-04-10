@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "outputDirectory": "frontend/dist/spa",
+  "outputDirectory": "dist/spa",
   "rewrites": [
     {
       "source": "/(.*)",
