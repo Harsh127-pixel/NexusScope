@@ -198,10 +198,10 @@ onUnmounted(() => {
 
 // 2. STATS ANIMATION
 const displayStats = reactive({
-  totalQueries: { label: 'TOTAL QUERIES', currentValue: 0, targetValue: dashboardStore.stats.totalQueries, prefix: '' },
-  activeTasks: { label: 'ACTIVE TASKS', currentValue: 0, targetValue: dashboardStore.stats.activeTasks, prefix: '' },
+  totalQueries: { label: 'TOTAL QUERIES', currentValue: 0, targetValue: dashboardStore.stats.totalQueries, prefix: '', suffix: '' },
+  activeTasks: { label: 'ACTIVE TASKS', currentValue: 0, targetValue: dashboardStore.stats.activeTasks, prefix: '', suffix: '' },
   avgResolution: { label: 'AVG. RESOLUTION', currentValue: 0, targetValue: (dashboardStore.stats.avgResolutionMs / 1000), prefix: '', suffix: 's' },
-  modulesOnline: { label: 'MODULES ONLINE', currentValue: 0, targetValue: dashboardStore.stats.modulesOnline, prefix: '' }
+  modulesOnline: { label: 'MODULES ONLINE', currentValue: 0, targetValue: dashboardStore.stats.modulesOnline, prefix: '', suffix: '' }
 })
 
 const animateStats = () => {
@@ -243,7 +243,7 @@ const navigateToModule = (name: string) => {
 }
 
 // 4. ACTIVITY TABLE CONFIG
-const columns = [
+const columns: any[] = [
   { name: 'id', label: 'TASK ID', field: 'id', align: 'left', classes: 'text-mono ns-muted' },
   { name: 'module', label: 'MODULE', field: 'module', align: 'left', classes: 'text-weight-medium' },
   { name: 'target', label: 'TARGET', field: 'target', align: 'left' },
