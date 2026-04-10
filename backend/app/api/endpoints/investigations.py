@@ -901,13 +901,58 @@ async def _check_tor_health() -> Dict[str, Any]:
             "error": f"{type(exc).__name__}: {str(exc)}"
         }
 
+async def _ahmia_search(query: str) -> Dict[str, Any]:
+    url = f"https://ahmia.fi/search/?q={query}"
+    try:
+        async with _httpx_client(proxy=None, timeout=20) as client:
+            response = await client.get(url, follow_redirects=True)
+            response.raise_for_status()
+            html = response.text
+    except Exception as exc:
+        return {"is_search": True, "query": query, "url": url, "error": f"Ahmia search failed: {str(exc)}"}
+    
+    soup = BeautifulSoup(html, "lxml")
+    results = []
+    
+    for item in soup.find_all("li"):
+        cite_tag = item.find("cite")
+        if not cite_tag:
+            continue
+        
+        title_tag = item.find("h4")
+        if not title_tag:
+            title_tag = item.find("a")
+            
+        desc_tag = item.find("p")
+        
+        onion_url = cite_tag.get_text(strip=True) if cite_tag else ""
+        if onion_url:
+            results.append({
+                "title": title_tag.get_text(strip=True) if title_tag else "Unknown",
+                "onion_url": onion_url,
+                "description": desc_tag.get_text(strip=True) if desc_tag else ""
+            })
+            
+    return {
+        "is_search": True,
+        "url": url,
+        "query": query,
+        "search_results": results[:25],
+        "total_returned": len(results),
+        "source": "Ahmia.fi Search Index"
+    }
+
 
 async def _onion_crawler(onion_url: str) -> Dict[str, Any]:
     """
     Crawl a .onion hidden service via the local Tor SOCKS5 proxy.
     Extracts: page title, text excerpt, discovered .onion URLs on the page,
     and any email addresses visible in the HTML.
+    If input is not an onion address or URL, falls back to Ahmia search.
     """
+    if ".onion" not in onion_url and "http" not in onion_url:
+        return await _ahmia_search(onion_url)
+
     # Normalise URL
     if not onion_url.startswith("http"):
         onion_url = f"http://{onion_url}"

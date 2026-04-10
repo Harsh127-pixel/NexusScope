@@ -296,8 +296,33 @@
           </div>
         </div>
 
+        <!-- Ahmia Search Results View -->
+        <div v-if="currentTask?.result?.is_search" class="q-mb-lg">
+          <div class="row items-center q-mb-md">
+            <Search :size="18" class="q-mr-sm" style="color:#a855f7" />
+            <span class="ns-label">AHMIA.FI SEARCH INDEX — {{ currentTask?.result?.total_returned }} RESULTS</span>
+          </div>
+          <q-card flat class="ns-report-block q-pa-md">
+            <div class="column q-gutter-y-md">
+              <div
+                v-for="(res, idx) in currentTask?.result?.search_results"
+                :key="idx"
+                class="column"
+              >
+                <div class="text-white text-weight-bold" style="font-size: 14px">{{ res.title }}</div>
+                <div class="text-mono q-mb-xs" style="color: #a855f7; font-size: 11px">{{ res.onion_url }}</div>
+                <div class="text-caption ns-muted">{{ res.description }}</div>
+                <q-separator dark class="q-mt-sm" v-if="idx < (currentTask?.result?.search_results.length - 1)" style="opacity: 0.2" />
+              </div>
+              <div v-if="!currentTask?.result?.search_results?.length" class="text-warning text-mono">
+                No results found for this query on the Tor network.
+              </div>
+            </div>
+          </q-card>
+        </div>
+
         <!-- Tor Status -->
-        <div class="row q-col-gutter-md q-mb-lg">
+        <div v-if="!currentTask?.result?.is_search" class="row q-col-gutter-md q-mb-lg">
           <div class="col-12 col-md-4">
             <q-card flat class="ns-report-block q-pa-md">
               <div class="ns-label q-mb-sm">TOR STATUS</div>
