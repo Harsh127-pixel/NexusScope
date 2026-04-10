@@ -173,7 +173,7 @@
           <!-- Advanced Options -->
           <q-slide-transition>
             <div v-if="showAdvanced" class="row q-col-gutter-md q-pt-sm">
-              <div class="col-12 col-sm-4">
+              <div class="col-12 col-sm-4" v-if="supportsTimeoutAndProxy">
                 <q-input
                   v-model.number="advOptions.timeout"
                   filled dark dense type="number"
@@ -183,18 +183,16 @@
                   id="timeout-input"
                 />
               </div>
-              <div class="col-12 col-sm-4 column justify-center">
+              <div class="col-12 col-sm-4 column justify-center" v-if="supportsPlaywright">
                 <q-checkbox
                   v-model="advOptions.usePlaywright"
                   label="USE PLAYWRIGHT RENDER"
                   dark color="primary"
                   class="ns-label"
-                  :disable="searchStore.selectedTheater === 'darkweb'"
                   id="playwright-toggle"
                 />
               </div>
-              <div class="col-12 col-sm-4 column justify-center"
-                   v-if="searchStore.selectedTheater !== 'darkweb'">
+              <div class="col-12 col-sm-4 column justify-center" v-if="supportsTimeoutAndProxy">
                 <q-checkbox
                   v-model="advOptions.useProxy"
                   label="CUSTOM PROXY"
@@ -203,7 +201,7 @@
                   id="proxy-toggle"
                 />
               </div>
-              <div class="col-12" v-if="advOptions.useProxy && searchStore.selectedTheater !== 'darkweb'">
+              <div class="col-12" v-if="showAdvanced && advOptions.useProxy && supportsTimeoutAndProxy">
                 <q-input
                   v-model="advOptions.proxy"
                   filled dark dense
@@ -310,7 +308,6 @@ const inputLabel = computed(() => {
     ip: 'TARGET IP ADDRESS',
     username: 'TARGET USERNAME',
     metadata: 'IMAGE URL',
-    geolocation: 'COORDINATES OR ADDRESS',
     scraper: 'TARGET URL',
     darkweb: 'ONION URL / .onion ADDRESS',
     phone: 'PHONE NUMBER (E.164)',
@@ -318,6 +315,14 @@ const inputLabel = computed(() => {
   }
   return labels[searchStore.selectedModule] ?? 'INVESTIGATION TARGET'
 })
+
+const supportsTimeoutAndProxy = computed(() => 
+  ['scraper', 'username', 'metadata'].includes(searchStore.selectedModule)
+)
+
+const supportsPlaywright = computed(() => 
+  searchStore.selectedModule === 'scraper'
+)
 
 function moduleIcon(module: string) {
   const map: Record<string, any> = {
@@ -335,7 +340,7 @@ function moduleIcon(module: string) {
 }
 
 function theaterNum(theater: Theater) {
-  return { darkweb: 'I', recon: 'II', identity: 'III', classic: 'IV' }[theater]
+  return { darkweb: 'I', recon: 'II', identity: 'III' }[theater]
 }
 
 function theaterLabel(theater: Theater) {
@@ -343,7 +348,6 @@ function theaterLabel(theater: Theater) {
     darkweb: 'Theater I — Dark Web / Onion',
     recon: 'Theater II — General Recon',
     identity: 'Theater III — Identity & Credential',
-    classic: 'Theater IV — Classic',
   }[theater]
 }
 
@@ -540,7 +544,6 @@ const startInvestigation = async () => {
 .badge--darkweb  { background: rgba(139,92,246,0.25) !important; color: #c4b5fd !important; }
 .badge--recon    { background: rgba(56,189,248,0.2) !important;  color: #7dd3fc !important; }
 .badge--identity { background: rgba(249,115,22,0.2) !important;  color: #fb923c !important; }
-.badge--classic  { background: rgba(255,255,255,0.1) !important; color: #94a3b8 !important; }
 
 /* ── Tor Banner ───────────────────────────────────────────── */
 .tor-banner {
@@ -603,7 +606,6 @@ const startInvestigation = async () => {
 .launch-btn--darkweb  { background: linear-gradient(135deg, #7c3aed, #a855f7) !important; color: #fff !important; }
 .launch-btn--recon    { background: linear-gradient(135deg, #0284c7, #38bdf8) !important; color: #fff !important; }
 .launch-btn--identity { background: linear-gradient(135deg, #c2410c, #f97316) !important; color: #fff !important; }
-.launch-btn--classic  { background: var(--ns-accent) !important; color: #000 !important; }
 
 .launch-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
 
@@ -621,7 +623,7 @@ const startInvestigation = async () => {
 
 .fade-slide-enter-active { transition: all 0.2s ease; }
 .fade-slide-leave-active { transition: all 0.15s ease; }
-.fade-slide-enter-from { opacity: 0; transform: translateY(6px); }
+.fade-slide-enter-from { opacity: 0; transform: translateY(6px); transform: translateY(6px); }
 .fade-slide-leave-to   { opacity: 0; transform: translateY(-4px); }
 
 .tracking-wide { letter-spacing: 0.12em; }

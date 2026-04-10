@@ -2,7 +2,7 @@ import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResp
 import { Notify } from 'quasar';
 
 // --- TYPES ---
-export type Module = 'username' | 'domain' | 'ip' | 'metadata' | 'geolocation' | 'scraper' | 'darkweb' | 'phone' | 'email';
+export type Module = 'username' | 'domain' | 'ip' | 'metadata' | 'scraper' | 'darkweb' | 'phone' | 'email';
 export type TaskStatus = 'queued' | 'processing' | 'completed' | 'failed';
 
 export interface Task {

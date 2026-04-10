@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { apiService, Module } from 'src/services/apiService';
 import { useAppStore } from './appStore';
 
-export type Theater = 'darkweb' | 'recon' | 'identity' | 'classic';
+export type Theater = 'darkweb' | 'recon' | 'identity';
 
 export interface ModuleOption {
   label: string;
@@ -66,20 +66,12 @@ export const MODULE_OPTIONS: ModuleOption[] = [
     description: 'Multi-platform: GitHub, Reddit, HackerNews, Twitter/X',
     placeholder: 'username_to_search',
   },
-  // ── Classic ───────────────────────────────────────────────────
   {
     label: 'METADATA EXTRACTION',
     value: 'metadata',
-    theater: 'classic',
+    theater: 'identity',
     description: 'EXIF metadata from image URL',
     placeholder: 'https://example.com/photo.jpg',
-  },
-  {
-    label: 'GEOLOCATION',
-    value: 'geolocation',
-    theater: 'classic',
-    description: 'Coordinate and location mapping',
-    placeholder: '40.7128,-74.0060',
   },
 ];
 

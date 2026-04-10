@@ -257,7 +257,7 @@ const modules = [
   // ── Theater III: Identity & Credential ───────────────
   { name: 'Email Hunt',       theater: 'III', color: '#f97316', desc: 'Gravatar + HaveIBeenPwned HIBP', icon: Mail,  status: 'ACTIVE', module: 'email' },
   { name: 'Username Recon',   theater: 'III', color: '#f97316', desc: 'GitHub · Reddit · HN · Twitter/X', icon: User, status: 'ACTIVE', module: 'username' },
-  { name: 'Metadata Extract', theater: 'III', color: '#94a3b8', desc: 'EXIF and file forensics', icon: FileSearch, status: 'ACTIVE', module: 'metadata' },
+  { name: 'Metadata Extract', theater: 'III', color: '#f97316', desc: 'EXIF and file forensics', icon: FileSearch, status: 'ACTIVE', module: 'metadata' },
 ]
 
 const navigateToModule = (module: string) => {
