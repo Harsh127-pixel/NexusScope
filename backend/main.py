@@ -75,25 +75,44 @@ logger = logging.getLogger("intrusion_x_se")
 #    so it is safe to call unconditionally.
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"), override=False)
 
-# ── Environment / secrets ─────────────────────
-#    In production, set these via a .env file or a secrets manager (Vault, GCP Secret Manager, etc.)
+# ── App ───────────────────────────────────────
+APP_NAME: str = os.environ.get("APP_NAME", "IntrusionX SE")
+APP_VERSION: str = os.environ.get("APP_VERSION", "2.0.0")
+DEBUG: bool = os.environ.get("DEBUG", "True").lower() == "true"
+
+# ── Server ───────────────────────────────────
+API_HOST: str = os.environ.get("API_HOST", "127.0.0.1")
+API_PORT: int = int(os.environ.get("API_PORT", "8000"))
+
+# ── PostgreSQL ────────────────────────────────
 DATABASE_URL: str = os.environ.get(
     "DATABASE_URL",
     "postgresql://osint_user:osint_pass@localhost:5432/intrusion_x_db",
 )
+
+# ── Firebase Admin SDK ────────────────────────
 FIREBASE_CRED_PATH: str = os.environ.get(
     "FIREBASE_CRED_PATH",
-    "/etc/secrets/firebase-service-account.json",   # ← mock path; replace in prod
+    "/etc/secrets/firebase-service-account.json",
 )
+FIREBASE_PROJECT_ID: str = os.environ.get("FIREBASE_PROJECT_ID", "intrusion-x-se-default")
+
+# ── Redis / Celery ────────────────────────────
+REDIS_URL: str = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+CELERY_BROKER_URL: str = os.environ.get("CELERY_BROKER_URL", REDIS_URL)
+CELERY_RESULT_BACKEND: str = os.environ.get("CELERY_RESULT_BACKEND", REDIS_URL)
+
+# ── Chatbot Tokens ────────────────────────────
 TELEGRAM_BOT_TOKEN: str = os.environ.get("TELEGRAM_BOT_TOKEN", "REPLACE_WITH_BOT_TOKEN")
 WHATSAPP_VERIFY_TOKEN: str = os.environ.get("WHATSAPP_VERIFY_TOKEN", "REPLACE_WITH_VERIFY_TOKEN")
 WHATSAPP_ACCESS_TOKEN: str = os.environ.get("WHATSAPP_ACCESS_TOKEN", "REPLACE_WITH_ACCESS_TOKEN")
 WHATSAPP_PHONE_NUMBER_ID: str = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "REPLACE_WITH_PHONE_ID")
-API_HOST: str = os.environ.get("API_HOST", "127.0.0.1")
-API_PORT: int = int(os.environ.get("API_PORT", "8000"))
 
-# HTTP timeout for outbound requests (seconds)
+# ── Tuning & CORS ─────────────────────────────
 HTTP_TIMEOUT: float = float(os.environ.get("HTTP_TIMEOUT", "12.0"))
+USER_AGENT: str = os.environ.get("USER_AGENT", f"{APP_NAME}/{APP_VERSION} (OSINT Engine)")
+CORS_ORIGINS: str = os.environ.get("CORS_ORIGINS", "*")
+PLAYWRIGHT_HEADLESS: bool = os.environ.get("PLAYWRIGHT_HEADLESS", "True").lower() == "true"
 
 
 # ──────────────────────────────────────────────
@@ -103,8 +122,8 @@ HTTP_TIMEOUT: float = float(os.environ.get("HTTP_TIMEOUT", "12.0"))
 
 class HealthResponse(BaseModel):
     status: str = Field(..., example="healthy")
-    service: str = Field(..., example="IntrusionX SE")
-    version: str = Field(..., example="2.0.0")
+    service: str = Field(..., example=APP_NAME)
+    version: str = Field(..., example=APP_VERSION)
     timestamp: str
 
 
@@ -342,10 +361,11 @@ async def _log_to_db(
 # ──────────────────────────────────────────────
 
 app = FastAPI(
-    title="IntrusionX SE — OSINT Aggregation Engine",
-    version="2.0.0",
+    title=f"{APP_NAME} — OSINT Aggregation Engine",
+    version=APP_VERSION,
+    debug=DEBUG,
     description=(
-        "**IntrusionX SE** is an industrial-grade, asynchronous OSINT aggregation platform "
+        f"**{APP_NAME}** is an industrial-grade, asynchronous OSINT aggregation platform "
         "providing IP intelligence, domain enumeration, image forensics, identity tracking, "
         "and chatbot webhook integrations.\n\n"
         "### Authentication\n"
@@ -365,11 +385,10 @@ app = FastAPI(
     openapi_url="/openapi.json",
 )
 
-# CORS — allow all origins for Vue/Quasar frontend
-#        Tighten allow_origins in production to specific domain(s).
+# CORS — dynamic origins from environment
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS.split(",") if CORS_ORIGINS != "*" else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -459,7 +478,7 @@ async def ip_intelligence(
         async with httpx.AsyncClient(timeout=HTTP_TIMEOUT) as client:
             response = await client.get(
                 f"https://get.geojs.io/v1/ip/geo/{ip_address}.json",
-                headers={"User-Agent": "IntrusionX-SE/2.0"},
+                headers={"User-Agent": USER_AGENT},
             )
             response.raise_for_status()
             geo_data = response.json()
@@ -787,10 +806,7 @@ async def identity_tracking(
         async with httpx.AsyncClient(
             timeout=HTTP_TIMEOUT,
             headers={
-                "User-Agent": (
-                    "Mozilla/5.0 (compatible; IntrusionX-SE/2.0; "
-                    "+https://github.com/Harsh127-pixel/NexusScope)"
-                ),
+                "User-Agent": USER_AGENT,
                 "Accept-Language": "en-US,en;q=0.9",
             },
             follow_redirects=True,
@@ -908,7 +924,11 @@ async def _telegram_echo_reply(chat_id: int, text: str) -> None:
     }
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(url, json=payload)
+            resp = await client.post(
+                url, 
+                json=payload,
+                headers={"User-Agent": USER_AGENT}
+            )
             resp.raise_for_status()
         logger.info("Telegram: echoed message to chat_id=%s", chat_id)
     except httpx.TimeoutException:
@@ -1060,7 +1080,10 @@ async def _process_whatsapp_message(payload: Dict[str, Any]) -> None:
                 resp = await client.post(
                     reply_url,
                     json=reply_payload,
-                    headers={"Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}"},
+                    headers={
+                        "Authorization": f"Bearer {WHATSAPP_ACCESS_TOKEN}",
+                        "User-Agent": USER_AGENT
+                    },
                 )
                 resp.raise_for_status()
     except Exception as exc:
@@ -1131,7 +1154,7 @@ async def on_startup() -> None:
     Server starts even if either service is unreachable.
     """
     logger.info("=" * 60)
-    logger.info("  IntrusionX SE  v2.0.0  —  Starting up")
+    logger.info("  %s  v%s  —  Starting up", APP_NAME, APP_VERSION)
     logger.info("=" * 60)
     _init_firebase()
     await _init_db()
@@ -1147,7 +1170,7 @@ async def on_shutdown() -> None:
     if _db_pool is not None:
         await _db_pool.close()
         logger.info("PostgreSQL connection pool closed.")
-    logger.info("IntrusionX SE shutdown complete.")
+    logger.info("%s shutdown complete.", APP_NAME)
 
 
 # ──────────────────────────────────────────────
@@ -1165,8 +1188,8 @@ async def health_check() -> HealthResponse:
     """Returns service health status. Suitable for load-balancer probes."""
     return HealthResponse(
         status="healthy",
-        service="IntrusionX SE",
-        version="2.0.0",
+        service=APP_NAME,
+        version=APP_VERSION,
         timestamp=datetime.now(timezone.utc).isoformat(),
     )
 
@@ -1188,8 +1211,8 @@ async def detailed_health() -> HealthResponse:
 
     return HealthResponse(
         status=f"{overall} | db={db_status} | firebase={firebase_status}",
-        service="IntrusionX SE",
-        version="2.0.0",
+        service=APP_NAME,
+        version=APP_VERSION,
         timestamp=datetime.now(timezone.utc).isoformat(),
     )
 
