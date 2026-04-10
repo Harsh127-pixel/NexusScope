@@ -844,8 +844,8 @@ const hasMapData = computed(() => !!currentTask.value?.result?.location)
 
 const tableData = computed(() => [currentTask.value?.result])
 const tableColumns = [
-  { name: 'field', label: 'FIELD', field: (row: any) => Object.keys(row)[0], align: 'left', classes: 'ns-label' },
-  { name: 'value', label: 'VALUE', field: (row: any) => Object.values(row)[0], align: 'left' }
+  { name: 'field', label: 'FIELD', field: (row: any) => Object.keys(row)[0], align: 'left' as const, classes: 'ns-label' },
+  { name: 'value', label: 'VALUE', field: (row: any) => Object.values(row)[0], align: 'left' as const }
 ]
 
 // Map Initialization
