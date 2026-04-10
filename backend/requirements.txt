@@ -1,9 +1,42 @@
+# ══════════════════════════════════════════════════════════════
+#  IntrusionX SE — Backend Dependencies (Unpinned for Compatibility)
+#  Install: pip install -r requirements.txt
+# ══════════════════════════════════════════════════════════════
+
+# ── API Framework ─────────────────────────────
 fastapi
-uvicorn
-google-cloud-firestore
-python-dotenv
-pydantic>=2.9.0
-celery
-redis
-pydantic-settings
+uvicorn[standard]
 python-multipart
+
+# ── Data Validation ───────────────────────────
+pydantic
+pydantic-settings
+
+# ── PostgreSQL (async) ────────────────────────
+asyncpg
+
+# ── Firebase Admin SDK ────────────────────────
+firebase-admin
+
+# ── HTTP Client ───────────────────────────────
+httpx
+
+# ── DNS Resolution ────────────────────────────
+dnspython
+
+# ── EXIF / Image Forensics ────────────────────
+exifread
+
+# ── HTML Scraping ─────────────────────────────
+beautifulsoup4
+lxml          # fast HTML parser backend for bs4
+
+# ── Browser Automation (Playwright skeleton) ──
+playwright   # run: playwright install chromium
+
+# ── Task Queue (Celery-ready) ─────────────────
+celery
+redis         # Celery broker/backend
+
+# ── Environment ───────────────────────────────
+python-dotenv

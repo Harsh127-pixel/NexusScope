@@ -2,36 +2,11 @@ import os
 from google.cloud import firestore
 from app.core.config import settings
 
-class MockFirestoreDb:
-    def collection(self, *args, **kwargs):
-        return MockCollection()
-
-class MockCollection:
-    def document(self, *args, **kwargs):
-        return MockDocument()
-
-class MockDocument:
-    def set(self, data):
-        pass
-    def get(self):
-        return MockDocSnapshot()
-    def update(self, data):
-        pass
-
-class MockDocSnapshot:
-    @property
-    def exists(self):
-        return False
-    def to_dict(self):
-        return {}
-
 class FirestoreService:
     def __init__(self):
-        try:
-            self.db = firestore.Client(project=settings.FIREBASE_PROJECT_ID)
-        except Exception as e:
-            print(f"WARN: Starting without real Firestore credentials. Using mock DB. Details: {e}")
-            self.db = MockFirestoreDb()
+        # In a real scenario, GOOGLE_APPLICATION_CREDENTIALS should point to a service account JSON
+        # For local dev, we assume it's set in environment or using local emulator
+        self.db = firestore.Client(project=settings.FIREBASE_PROJECT_ID)
 
     async def create_document(self, collection: str, data: dict, doc_id: str = None):
         doc_ref = self.db.collection(collection).document(doc_id)
