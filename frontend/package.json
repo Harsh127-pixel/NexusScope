@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "quasar dev",
     "build": "quasar build",
+    "start": "quasar serve dist/spa --history",
     "lint": "eslint --ext .js,.vue ./",
     "format": "prettier --write \"**/*.{js,vue,scss,html,md,json}\" --ignore-path .gitignore",
     "test": "echo \"No tests defined\" && exit 0"
