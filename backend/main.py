@@ -111,7 +111,8 @@ WHATSAPP_PHONE_NUMBER_ID: str = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "REPL
 # ── Tuning & CORS ─────────────────────────────
 HTTP_TIMEOUT: float = float(os.environ.get("HTTP_TIMEOUT", "12.0"))
 USER_AGENT: str = os.environ.get("USER_AGENT", f"{APP_NAME}/{APP_VERSION} (OSINT Engine)")
-CORS_ORIGINS: str = os.environ.get("CORS_ORIGINS", "*")
+# Add specific Vercel and local origins for production security
+CORS_ORIGINS: str = os.environ.get("CORS_ORIGINS", "https://nexusscope.vercel.app,https://nexusscope-frontend.onrender.com,http://localhost:5173")
 PLAYWRIGHT_HEADLESS: bool = os.environ.get("PLAYWRIGHT_HEADLESS", "True").lower() == "true"
 
 

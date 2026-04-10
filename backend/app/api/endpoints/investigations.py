@@ -418,6 +418,9 @@ def _httpx_client(proxy: Optional[str], timeout: int) -> httpx.AsyncClient:
         },
     }
     if proxy:
+        # If no scheme provided (e.g., just an IP like 16.16.25.208), default to socks5://
+        if "://" not in proxy:
+            proxy = f"socks5://{proxy}"
         kwargs["proxy"] = proxy
     return httpx.AsyncClient(**kwargs)
 
