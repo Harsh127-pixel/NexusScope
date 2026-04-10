@@ -592,6 +592,7 @@ async def _domain_lookup(domain: str) -> Dict[str, Any]:
     record_types = ["A", "MX", "TXT", "NS", "AAAA", "CNAME"]
     records: Dict[str, Any] = {}
 
+    # DNS Records — Handled individually to prevent total failure
     for record_type in record_types:
         try:
             answer = await resolver.resolve(domain, record_type)
@@ -606,18 +607,27 @@ async def _domain_lookup(domain: str) -> Dict[str, Any]:
             else:
                 records[record_type] = [str(row) for row in answer]
         except Exception as exc:
-            records[record_type] = f"lookup_error: {exc}"
+            records[record_type] = f"lookup_error: {type(exc).__name__}"
+
+    # Global sub-module isolation
+    async def _safe_run(name: str, coro):
+        try:
+            return await coro
+        except Exception as e:
+            logger.error(f"Module '{name}' failed for {domain}: {e}")
+            return {"error": f"{type(e).__name__}: {str(e)}", "module_failed": True}
 
     return {
         "domain": domain,
         "records": records,
         "source": "dns_asyncresolver",
-        "whois": await _whois_lookup(domain),
-        "subdomains": await _common_subdomains(domain) + await _crtsh_subdomains(domain),
-        "tls": await _tls_metadata(domain),
-        "web": await _web_fingerprint(domain),
-        "s3_buckets": await _hunt_s3_buckets(domain),
+        "whois": await _safe_run("whois", _whois_lookup(domain)),
+        "subdomains": await _safe_run("subdomains", _common_subdomains(domain)),
+        "tls": await _safe_run("tls", _tls_metadata(domain)),
+        "web": await _safe_run("web", _web_fingerprint(domain)),
+        "s3_buckets": await _safe_run("s3_buckets", _hunt_s3_buckets(domain)),
         "trust_score": await _trust_score(domain, records),
+        "hardened_mode": True
     }
 
 
@@ -807,6 +817,7 @@ async def _username_lookup(username: str, proxy: Optional[str], timeout: int) ->
 
 async def _check_tor_health() -> Dict[str, Any]:
     """Verify that the local Tor SOCKS5 proxy is live and working."""
+    start_time = time.time()
     try:
         async with httpx.AsyncClient(
             proxy=TOR_PROXY_URL,
@@ -816,17 +827,34 @@ async def _check_tor_health() -> Dict[str, Any]:
         ) as client:
             resp = await client.get("https://check.torproject.org/api/ip")
             data = resp.json()
+            latency = round((time.time() - start_time) * 1000, 2)
             return {
                 "tor_running": data.get("IsTor", False),
                 "exit_ip": data.get("IP"),
                 "proxy_url": TOR_PROXY_URL,
+                "latency_ms": latency,
+                "status": "connected"
             }
+    except httpx.ConnectTimeout:
+        return {
+            "tor_running": False,
+            "status": "timeout",
+            "proxy_url": TOR_PROXY_URL,
+            "error": "Connection timed out. Check AWS Security Group (Inbound Port 9050)."
+        }
+    except httpx.ConnectError:
+        return {
+            "tor_running": False,
+            "status": "refused",
+            "proxy_url": TOR_PROXY_URL,
+            "error": "Connection refused. Check if Tor service is running on EC2."
+        }
     except Exception as exc:
         return {
             "tor_running": False,
-            "exit_ip": None,
+            "status": "error",
             "proxy_url": TOR_PROXY_URL,
-            "error": str(exc),
+            "error": f"{type(exc).__name__}: {str(exc)}"
         }
 
 
@@ -1232,9 +1260,11 @@ async def _execute_task(task_id: str) -> None:
             task["duration_ms"] = int((completed_at - start) * 1000)
     except Exception as exc:
         completed_at = time.time()
+        error_msg = f"{type(exc).__name__}: {str(exc)}"
+        logger.error(f"Investigation task failed: {error_msg}")
         async with TASK_LOCK:
             task["status"] = "failed"
-            task["error"] = str(exc)
+            task["error"] = error_msg
             task["completed_at"] = completed_at
             task["duration_ms"] = int((completed_at - start) * 1000)
 
