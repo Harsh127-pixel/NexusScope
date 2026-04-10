@@ -3,6 +3,17 @@
     <!-- TOP HEADER -->
     <q-header class="ns-header">
       <q-toolbar class="q-px-md">
+        <!-- Hamburger for mobile -->
+        <q-btn
+          v-if="$q.screen.lt.md"
+          flat round dense
+          class="q-mr-sm ns-text-muted"
+          @click="drawerOpen = !drawerOpen"
+          aria-label="Toggle Menu"
+        >
+          <Menu :size="20" />
+        </q-btn>
+
         <!-- Page Title (Left) -->
         <div class="ns-page-title ns-heading-sm">
           {{ route.meta.title || 'Dashboard' }}
@@ -10,8 +21,8 @@
 
         <q-space />
 
-        <!-- Global Search (Center) -->
-        <div class="ns-global-search">
+        <!-- Global Search (Center, hidden on mobile) -->
+        <div v-if="$q.screen.gt.sm" class="ns-global-search">
           <q-input
             v-model="searchQuery"
             dense
@@ -41,7 +52,7 @@
           <!-- API Status Chip -->
           <div :class="['ns-status-chip', appStore.isApiConnected ? 'is-connected' : 'is-offline']" role="status">
             <div class="status-dot"></div>
-            <span>{{ appStore.isApiConnected ? 'CONNECTED' : 'OFFLINE' }}</span>
+            <span v-if="$q.screen.gt.xs">{{ appStore.isApiConnected ? 'CONNECTED' : 'OFFLINE' }}</span>
           </div>
 
           <q-btn flat round dense class="ns-text-muted" aria-label="System Settings">
@@ -55,9 +66,10 @@
     <q-drawer
       v-model="drawerOpen"
       show-if-above
-      :mini="appStore.sidebarCollapsed"
+      :mini="appStore.sidebarCollapsed && $q.screen.gt.sm"
       :width="240"
       :mini-width="56"
+      :behavior="$q.screen.lt.md ? 'mobile' : 'desktop'"
       class="ns-sidebar"
     >
       <div class="column full-height no-wrap">
@@ -159,7 +171,8 @@ import {
   Activity, 
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Menu
 } from 'lucide-vue-next'
 
 const route = useRoute()

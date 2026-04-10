@@ -1,5 +1,5 @@
 <template>
-  <q-page class="q-pa-xl">
+  <q-page :class="$q.screen.gt.sm ? 'q-pa-xl' : 'q-pa-md'">
     <!-- 1. PAGE HEADER -->
     <header class="q-mb-xl">
       <div class="ns-label q-mb-xs">NEXUSSCOPE / DASHBOARD</div>

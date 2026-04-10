@@ -20,7 +20,7 @@
           @click="searchStore.setTheater('darkweb')"
           id="theater-darkweb"
         >
-          <div class="theater-card__icon">🧅</div>
+          <div class="theater-card__icon"><Eye :size="28" /></div>
           <div class="theater-card__body">
             <div class="theater-card__label">THEATER I</div>
             <div class="theater-card__name">Dark Web / Onion</div>
@@ -36,7 +36,7 @@
           @click="searchStore.setTheater('recon')"
           id="theater-recon"
         >
-          <div class="theater-card__icon">🔍</div>
+          <div class="theater-card__icon"><Search :size="28" /></div>
           <div class="theater-card__body">
             <div class="theater-card__label">THEATER II</div>
             <div class="theater-card__name">General Recon &amp; Footprinting</div>
@@ -52,7 +52,7 @@
           @click="searchStore.setTheater('identity')"
           id="theater-identity"
         >
-          <div class="theater-card__icon">🔑</div>
+          <div class="theater-card__icon"><Shield :size="28" /></div>
           <div class="theater-card__body">
             <div class="theater-card__label">THEATER III</div>
             <div class="theater-card__name">Identity &amp; Credential Hunting</div>
@@ -440,10 +440,18 @@ const startInvestigation = async () => {
 .theater-card--identity.theater-card--active,
 .theater-card--identity:hover { border-color: rgba(249,115,22,0.5);  box-shadow: 0 0 24px rgba(249,115,22,0.18); }
 
+.theater-card--darkweb  .theater-card__icon { color: #a855f7; }
+.theater-card--recon    .theater-card__icon { color: #38bdf8; }
+.theater-card--identity .theater-card__icon { color: #f97316; }
+
 .theater-card__icon {
-  font-size: 28px;
   flex-shrink: 0;
   line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
 }
 
 .theater-card__body { flex: 1; min-width: 0; }
