@@ -402,9 +402,9 @@ def _trust_score(domain_data: Dict[str, Any]) -> Dict[str, Any]:
     rating = "high" if score >= 75 else "medium" if score >= 45 else "low"
 
     return {
-        "score": score,
-        "rating": rating,
-        "signals": signals,
+        "risk_score": score,
+        "risk_rating": rating,
+        "risk_signals": signals,
         "warnings": deductions,
         "note": "Heuristic trust score based on public signals, not a definitive fraud verdict.",
     }
@@ -628,7 +628,6 @@ async def _domain_lookup(domain: str) -> Dict[str, Any]:
         "tls": await _safe_run("tls", _tls_metadata(domain)),
         "web": await _safe_run("web", _web_fingerprint(domain)),
         "s3_buckets": await _safe_run("s3_buckets", _hunt_s3_buckets(domain)),
-        "trust_score": await _trust_score(domain, records),
         "hardened_mode": True
     }
 
@@ -738,11 +737,13 @@ async def _username_lookup(username: str, proxy: Optional[str], timeout: int) ->
                 return {"platform": "GitHub", "username": username, "profile_found": False, "url": url}
             if response.status_code != 200:
                 return {"platform": "GitHub", "username": username, "profile_found": False, "url": url, "error": f"HTTP {response.status_code}"}
+            
+            # Simple assumption: 200 OK means it was found. Try to extract name/bio gracefully.
             soup = BeautifulSoup(response.text, "lxml")
-            name_tag = soup.find("span", {"itemprop": "name"})
-            bio_tag = soup.find("div", class_=re.compile(r"p-note", re.I))
-            avatar_tag = soup.find("img", {"alt": re.compile(rf"@{re.escape(username)}", re.I)})
-            followers_tag = soup.find("span", class_=re.compile(r"text-bold", re.I))
+            name_tag = soup.find("span", {"itemprop": "name"}) or soup.find("h1", class_=re.compile(r"h2-mktg|h1"))
+            bio_tag = soup.find("div", class_=re.compile(r"p-note|color-fg-muted", re.I))
+            avatar_tag = soup.find("img", class_=re.compile(r"avatar", re.I))
+            
             return {
                 "platform": "GitHub",
                 "username": username,
@@ -1713,11 +1714,19 @@ async def _image_metadata(image_url: str, proxy: Optional[str], timeout: int) ->
         response = await client.get(target)
         response.raise_for_status()
         raw = response.content
+        content_type = response.headers.get("content-type", "unknown")
+        size_bytes = len(raw)
 
-    tags = exifread.process_file(io.BytesIO(raw), details=False)
+    tags = {}
+    try:
+        tags = exifread.process_file(io.BytesIO(raw), details=False) or {}
+    except Exception:
+        pass
 
     return {
         "image_url": target,
+        "content_type": content_type,
+        "file_size_bytes": size_bytes,
         "tag_count": len(tags),
         "camera_make": str(tags.get("Image Make")) if tags.get("Image Make") else None,
         "camera_model": str(tags.get("Image Model")) if tags.get("Image Model") else None,
@@ -1741,7 +1750,7 @@ async def _execute_task(task_id: str) -> None:
     try:
         if module == "domain":
             result = await _domain_lookup(target)
-            result["trust"] = _trust_score(result)
+            result.update(_trust_score(result))
         elif module == "ip":
             result = await _ip_lookup(target)
         elif module == "username":

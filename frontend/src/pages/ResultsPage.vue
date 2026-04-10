@@ -841,9 +841,11 @@
             <q-card flat class="ns-report-block q-pa-md full-height">
               <div class="ns-label q-mb-md">EXIF ATTRIBUTES</div>
               <div class="column q-gutter-y-sm text-mono">
-                <div class="row justify-between"><span class="ns-muted">CAMERA:</span> <span>{{ currentTask?.result?.camera_make || 'N/A' }} {{ currentTask?.result?.camera_model }}</span></div>
+                <div class="row justify-between"><span class="ns-muted">FILE TYPE:</span> <span>{{ currentTask?.result?.content_type || 'N/A' }}</span></div>
+                <div class="row justify-between"><span class="ns-muted">FILE SIZE:</span> <span>{{ currentTask?.result?.file_size_bytes ? (currentTask.result.file_size_bytes / 1024).toFixed(1) + ' KB' : 'N/A' }}</span></div>
+                <div class="row justify-between"><span class="ns-muted">CAMERA:</span> <span>{{ currentTask?.result?.camera_make || 'N/A' }} {{ currentTask?.result?.camera_model || '' }}</span></div>
                 <div class="row justify-between"><span class="ns-muted">CAPTURED:</span> <span>{{ currentTask?.result?.datetime_original || 'N/A' }}</span></div>
-                <div class="row justify-between"><span class="ns-muted">TAGS FOUND:</span> <span>{{ currentTask?.result?.tag_count || 0 }}</span></div>
+                <div class="row justify-between"><span class="ns-muted">EXIF TAGS:</span> <span>{{ currentTask?.result?.tag_count || 0 }}</span></div>
                 <div class="ns-label q-mt-md" style="font-size: 10px">SOURCE URL</div>
                 <div class="text-info ellipsis" style="font-size: 11px">{{ currentTask?.target }}</div>
               </div>
