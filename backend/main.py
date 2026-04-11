@@ -966,31 +966,115 @@ async def identity_tracking(
 
 async def _telegram_echo_reply(chat_id: int, text: str) -> None:
     """
-    Background task: echo the message back to the Telegram chat via Bot API.
-
-    This runs **after** the 200 OK has been returned to Telegram's servers,
-    satisfying their 5-second response window requirement.
-
+    Background task: Process incoming text, infer OSINT module, and dispatch tasks.
     """
+    # Import locally to prevent circular dependencies
+    from app.api.endpoints.investigations import TASKS, _execute_task
+    import time
+    
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {
-        "chat_id": chat_id,
-        "text": f"🔍 IntrusionX SE received: {text}",
-        "parse_mode": "HTML",
-    }
-    try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            resp = await client.post(
-                url, 
-                json=payload,
-                headers={"User-Agent": USER_AGENT}
+    text = text.strip()
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        # 1. Handle commands / greetings
+        if text.startswith("/") or text.lower() in ["hi", "hello", "help", "start"]:
+            reply_text = (
+                "🛡️ <b>Welcome to IntrusionX OSINT Bot</b>\n\n"
+                "To launch an investigation, simply send me a target:\n\n"
+                "🌐 <b>Domain:</b>  <code>example.com</code>\n"
+                "📡 <b>IP:</b>  <code>8.8.8.8</code>\n"
+                "📱 <b>Phone:</b>  <code>+91 9876543210</code>\n"
+                "📧 <b>Email:</b>  <code>target@gmail.com</code>\n"
+                "👤 <b>Username:</b>  <code>@johndoe</code>\n"
+                "🕷️ <b>Dark Web:</b>  <code>hack</code> or <code>.onion</code>\n\n"
+                "I will analyze the target and provide a secure link to the full intelligence report."
             )
-            resp.raise_for_status()
-        logger.info("Telegram: echoed message to chat_id=%s", chat_id)
-    except httpx.TimeoutException:
-        logger.warning("Telegram: timeout sending reply to chat_id=%s", chat_id)
-    except Exception as exc:
-        logger.error("Telegram: echo failed for chat_id=%s — %s", chat_id, exc)
+            await client.post(url, json={"chat_id": chat_id, "text": reply_text, "parse_mode": "HTML"})
+            return
+
+        # 2. Handle generic uploads gracefully
+        if text.startswith("[") and text.endswith("]"):
+            reply_text = (
+                f"📥 <i>{text}</i>\n\n"
+                "Image forensics and metadata extraction capabilities for direct uploads are currently optimized for the web portal.\n"
+                "Please visit https://nexusscope.vercel.app to run full EXIF scans on files."
+            )
+            await client.post(url, json={"chat_id": chat_id, "text": reply_text, "parse_mode": "HTML"})
+            return
+
+        # 3. Infer target context
+        module = "scraper"
+        target = text
+        
+        if re.match(r"^\d{1,3}(\.\d{1,3}){3}$", target):
+            module = "ip"
+        elif "@" in target and "." in target:
+            module = "email"
+        elif target.startswith("+") or re.match(r"^[0-9\-\s\(\)]{10,15}$", target):
+            module = "phone"
+        elif target.endswith(".onion"):
+            module = "darkweb"
+        elif target.startswith("@"):
+            module = "username"
+            target = target[1:]
+        elif "://" in target:
+            module = "domain"
+            target = target.split("://")[-1].split("/")[0]
+        elif "." in target and " " not in target:
+            module = "domain"
+        elif not "." in target and " " not in target and len(target) < 20:
+            module = "username"
+        else:
+            module = "darkweb" # Fallback to Ahmia search
+
+        # 4. Bind the task in memory exactly like a normal HTTP API call
+        task_id = str(uuid.uuid4())
+        TASKS[task_id] = {
+            "id": task_id,
+            "module": module,
+            "target": target,
+            "status": "pending",
+            "created_at": time.time(),
+            "result": None,
+            "error": None,
+            "options": {"timeout": 12}
+        }
+        
+        frontend_url = f"https://nexusscope.vercel.app/results/{task_id}"
+        
+        reply_init = (
+            f"🔍 <b>OSINT Scan Initiated</b>\n\n"
+            f"🎯 <b>Target:</b> <code>{target}</code>\n"
+            f"⚙️ <b>Module:</b> {module.upper()}\n\n"
+            f"<b>View live tracking:</b>\n"
+            f"👉 <a href='{frontend_url}'>Launch Command Center</a>"
+        )
+        await client.post(url, json={"chat_id": chat_id, "text": reply_init, "parse_mode": "HTML", "disable_web_page_preview": True})
+
+        # 5. Native async execution (no network call needed to self)
+        try:
+            await _execute_task(task_id)
+        except Exception as exc:
+            TASKS[task_id]["status"] = "failed"
+            TASKS[task_id]["error"] = str(exc)
+
+        # 6. Final confirmation report back to the user
+        task = TASKS[task_id]
+        if task["status"] == "completed":
+            reply_done = (
+                f"✅ <b>Investigation Complete</b>\n\n"
+                f"🎯 <b>Target:</b> <code>{target}</code>\n"
+                f"Your intelligence report is ready!\n"
+                f"👉 <a href='{frontend_url}'>View Full Report</a>"
+            )
+        else:
+            reply_done = (
+                f"❌ <b>Investigation Failed</b>\n\n"
+                f"🎯 <b>Target:</b> <code>{target}</code>\n"
+                f"<b>Reason:</b> {task.get('error', 'Unknown Exception')}"
+            )
+            
+        await client.post(url, json={"chat_id": chat_id, "text": reply_done, "parse_mode": "HTML", "disable_web_page_preview": True})
 
 
 @app.post(
