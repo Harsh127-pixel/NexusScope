@@ -1035,10 +1035,27 @@ async def telegram_webhook(
     try:
         message = body.get("message") or body.get("edited_message", {})
         chat_id: int = message.get("chat", {}).get("id", 0)
-        text: str = message.get("text") or message.get("caption") or ""
+        
+        # Support uploads and missing captions
+        if message.get("text"):
+            text = message["text"]
+        elif message.get("caption"):
+            text = message["caption"]
+        elif message.get("document"):
+            doc_name = message["document"].get("file_name", "a document")
+            text = f"[DOCUMENT RECEIVED] {doc_name}"
+        elif message.get("photo"):
+            text = "[PHOTO RECEIVED]"
+        elif message.get("video"):
+            text = "[VIDEO RECEIVED]"
+        elif message.get("audio") or message.get("voice"):
+            text = "[AUDIO RECEIVED]"
+        else:
+            text = "[MEDIA/DATA RECEIVED]"
+
         logger.info("Telegram: update from chat_id=%s text='%s'", chat_id, text[:80])
 
-        if chat_id and text:
+        if chat_id:
             background_tasks.add_task(_telegram_echo_reply, chat_id, text)
     except Exception as exc:
         logger.error("Telegram webhook: dispatch error — %s", exc)
