@@ -5,7 +5,8 @@ module.exports = configure(function (ctx) {
   return {
     boot: [
       'axios',
-      'error-handler'
+      'error-handler',
+      'auth'
     ],
 
     css: [

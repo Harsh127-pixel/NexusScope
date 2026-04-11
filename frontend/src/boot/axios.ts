@@ -1,6 +1,7 @@
 import { boot } from 'quasar/wrappers';
 import axios, { AxiosInstance } from 'axios';
 import { useAppStore } from 'src/stores/appStore';
+import { useAuthStore } from 'src/stores/authStore';
 
 declare module '@vue/runtime-core' {
   interface ComponentCustomProperties {
@@ -18,9 +19,17 @@ const api = axios.create({
 export default boot(({ app, store }) => {
   const appStore = useAppStore(store);
 
-  // Add the X-NexusScope-Version header to all requests
-  api.interceptors.request.use((config) => {
+  // Add headers to all requests
+  api.interceptors.request.use(async (config) => {
     config.headers['X-NexusScope-Version'] = import.meta.env.VITE_APP_VERSION || '1.0.0';
+    
+    // Inject Firebase Token
+    const authStore = useAuthStore(store);
+    if (authStore.user) {
+      const token = await authStore.user.getIdToken();
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    
     return config;
   });
 
@@ -30,8 +39,8 @@ export default boot(({ app, store }) => {
     (error) => {
       if (error.response) {
         if (error.response.status === 401) {
-          // Future: Clear session and redirect to login
-          console.warn('AUTH_INVALID: Session expired');
+          const authStore = useAuthStore(store);
+          authStore.logout(); // Clear state and redirect to login
         } else if (error.response.status === 503) {
           appStore.apiStatus = 'offline';
         }

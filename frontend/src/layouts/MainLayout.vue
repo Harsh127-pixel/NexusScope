@@ -39,9 +39,9 @@
         <q-space />
 
         <!-- Actions (Right) -->
-        <div class="row q-gutter-x-md items-center">
+        <div class="row q-gutter-x-sm items-center">
           <!-- Task Queue Indicator -->
-          <div class="ns-task-indicator cursor-pointer" role="status" aria-label="Active Investigations">
+          <div class="ns-task-indicator cursor-pointer q-mr-md" role="status" aria-label="Active Investigations">
             <Layers :size="18" />
             <q-badge v-if="appStore.activeTaskCount > 0" color="primary" floating rounded>
               {{ appStore.activeTaskCount }}
@@ -52,11 +52,33 @@
           <!-- API Status Chip -->
           <div :class="['ns-status-chip', appStore.isApiConnected ? 'is-connected' : 'is-offline']" role="status">
             <div class="status-dot"></div>
-            <span v-if="$q.screen.gt.xs">{{ appStore.isApiConnected ? 'CONNECTED' : 'OFFLINE' }}</span>
+            <span v-if="$q.screen.gt.sm">{{ appStore.isApiConnected ? 'CONNECTED' : 'OFFLINE' }}</span>
           </div>
 
-          <q-btn flat round dense class="ns-text-muted" aria-label="System Settings">
-            <Settings :size="18" />
+          <!-- User Profile -->
+          <q-btn flat no-caps class="q-ml-sm ns-user-btn" v-if="authStore.isLoggedIn">
+            <q-avatar size="28px" class="ns-avatar">
+              <img v-if="authStore.avatarUrl" :src="authStore.avatarUrl" alt="P">
+              <span v-else>{{ authStore.displayName.charAt(0) }}</span>
+            </q-avatar>
+            <div class="column q-ml-sm gt-xs ns-user-info">
+              <span class="ns-user-name">{{ authStore.displayName }}</span>
+              <span class="ns-user-role">{{ authStore.userRole.toUpperCase() }}</span>
+            </div>
+            
+            <q-menu class="ns-user-menu" :offset="[0, 10]">
+              <q-list style="min-width: 180px">
+                <q-item clickable v-ripple to="/settings">
+                  <q-item-section avatar><Settings :size="16"/></q-item-section>
+                  <q-item-section>PROFILE SETTINGS</q-item-section>
+                </q-item>
+                <q-separator dark />
+                <q-item clickable v-ripple class="text-negative" @click="handleLogout">
+                  <q-item-section avatar><LogOut :size="16"/></q-item-section>
+                  <q-item-section>SIGN OUT</q-item-section>
+                </q-item>
+              </q-list>
+            </q-menu>
           </q-btn>
         </div>
       </q-toolbar>
@@ -160,9 +182,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from 'src/stores/appStore'
+import { useAuthStore } from 'src/stores/authStore'
 import { 
   LayoutDashboard, 
   Search, 
@@ -172,11 +194,14 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  LogOut
 } from 'lucide-vue-next'
 
 const route = useRoute()
+const router = useRouter()
 const appStore = useAppStore()
+const authStore = useAuthStore()
 
 const drawerOpen = ref(true)
 const searchQuery = ref('')
@@ -188,6 +213,11 @@ const navItems = [
   { label: 'SYSTEM STATUS', icon: Activity, path: '/status' },
   { label: 'SETTINGS', icon: Settings, path: '/settings' }
 ]
+
+// Auth Handlers
+const handleLogout = async () => {
+  await authStore.logout()
+}
 
 // Handle Responsive Collapse
 const handleResize = () => {
@@ -329,5 +359,51 @@ onUnmounted(() => {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+/* USER PROFILE STYLES */
+.ns-user-btn {
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: background 0.2s;
+}
+
+.ns-user-btn:hover {
+  background: var(--ns-bg-elevated);
+}
+
+.ns-avatar {
+  border: 1px solid var(--ns-border);
+  background: var(--ns-accent-dim);
+  color: var(--ns-accent);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.ns-user-info {
+  line-height: 1.1;
+  text-align: left;
+}
+
+.ns-user-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ns-text-primary);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ns-user-role {
+  font-size: 9px;
+  font-family: var(--ns-font-mono);
+  color: var(--ns-accent);
+  letter-spacing: 0.05em;
+}
+
+.ns-user-menu {
+  background: var(--ns-bg-surface) !important;
+  border: 1px solid var(--ns-border);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
 }
 </style>
