@@ -1,36 +1,32 @@
 <template>
-  <q-page class="q-pa-xl">
-    <!-- 1. PAGE HEADER -->
+  <q-page class="q-pa-xl dashboard-page">
     <header class="q-mb-xl">
       <div class="ns-label q-mb-xs">NEXUSSCOPE / DASHBOARD</div>
       <h1 class="ns-heading-xl q-ma-none">Intelligence Overview</h1>
       <div class="ns-muted text-mono q-mt-sm">{{ currentTime }}</div>
     </header>
 
-    <!-- 2. STATS STRIP -->
     <div class="row q-col-gutter-lg q-mb-xl">
-      <div v-for="(stat, key) in displayStats" :key="key" class="col-12 col-sm-6 col-md-3">
+      <div v-for="card in statsCards" :key="card.label" class="col-12 col-sm-6 col-md-3">
         <div class="ns-stat-card">
-          <div class="ns-label text-muted">{{ stat.label }}</div>
+          <div class="ns-label text-muted">{{ card.label }}</div>
           <div class="stat-value ns-heading-lg q-mt-xs">
-            {{ stat.prefix }}{{ stat.currentValue }}{{ stat.suffix }}
+            {{ card.prefix }}{{ card.value }}{{ card.suffix }}
           </div>
         </div>
       </div>
     </div>
 
     <div class="row q-col-gutter-xl q-mb-xl items-stretch">
-      <!-- LEFT COLUMN -->
       <div class="col-12 col-lg-8 column">
-        <!-- 3. QUICK LAUNCH -->
         <section class="col column">
           <div class="ns-label q-mb-md">QUICK LAUNCH MODULES</div>
           <div class="ns-module-grid">
-            <div 
-              v-for="module in modules" 
-              :key="module.name" 
+            <div
+              v-for="module in modules"
+              :key="module.key"
               class="ns-module-card clickable"
-              @click="navigateToModule(module.name)"
+              @click="navigateToModule(module.key)"
             >
               <div class="row no-wrap items-center full-width">
                 <component :is="module.icon" :size="32" class="ns-accent-text q-mr-md shrink-0" />
@@ -39,8 +35,8 @@
                   <div class="module-desc ns-muted text-caption ellipsis">{{ module.desc }}</div>
                 </div>
               </div>
-              <q-badge 
-                :color="module.status === 'ACTIVE' ? 'positive' : 'negative'" 
+              <q-badge
+                :color="module.status === 'ACTIVE' ? 'positive' : 'negative'"
                 class="absolute-top-right q-ma-xs ns-label"
                 style="font-size: 8px"
               >
@@ -51,55 +47,57 @@
         </section>
       </div>
 
-      <!-- RIGHT COLUMN -->
       <div class="col-12 col-lg-4 column">
-        <!-- 5. SYSTEM STATUS -->
         <section class="col column">
           <div class="ns-label q-mb-md">SYSTEM INFRASTRUCTURE</div>
           <q-card flat class="q-pa-lg ns-status-panel col column justify-center">
             <div class="column q-gutter-y-lg">
-              <!-- API STATUS -->
               <div class="row items-center justify-between no-wrap full-width">
                 <div class="row items-center no-wrap q-mr-sm ellipsis">
                   <Server :size="18" class="ns-muted q-mr-md" />
                   <span class="text-white text-weight-medium ellipsis">API ENGINE</span>
                 </div>
                 <div class="row items-center no-wrap">
-                  <span class="text-mono ns-muted q-mr-sm" style="font-size: 11px">
-                    {{ dashboardStore.systemStatus.api.latency }}
-                  </span>
-                  <q-badge color="positive" rounded class="ns-label">
+                  <span class="text-mono ns-muted q-mr-sm" style="font-size: 11px">{{ dashboardStore.systemStatus.api.latency }}</span>
+                  <q-badge :color="dashboardStore.systemStatus.api.status === 'OFFLINE' ? 'negative' : 'positive'" rounded class="ns-label">
                     {{ dashboardStore.systemStatus.api.status }}
                   </q-badge>
                 </div>
               </div>
 
-              <!-- TASK QUEUE STATUS -->
               <div class="row items-center justify-between no-wrap full-width">
                 <div class="row items-center no-wrap q-mr-sm ellipsis">
                   <Database :size="18" class="ns-muted q-mr-md" />
                   <span class="text-white text-weight-medium ellipsis">TASK QUEUE</span>
                 </div>
                 <div class="row items-center no-wrap">
-                  <span class="text-mono ns-muted q-mr-sm" style="font-size: 11px">
-                    {{ dashboardStore.systemStatus.queue.tasks }} QUEUED
-                  </span>
+                  <span class="text-mono ns-muted q-mr-sm" style="font-size: 11px">{{ dashboardStore.systemStatus.queue.tasks }} QUEUED</span>
                   <q-badge color="positive" rounded class="ns-label">
                     {{ dashboardStore.systemStatus.queue.status }}
                   </q-badge>
                 </div>
               </div>
 
-              <!-- FIRESTORE STATUS -->
+              <div class="row items-center justify-between no-wrap full-width">
+                <div class="row items-center no-wrap q-mr-sm ellipsis">
+                  <Shield :size="18" class="ns-muted q-mr-md" />
+                  <span class="text-white text-weight-medium ellipsis">TOR PROXY</span>
+                </div>
+                <div class="row items-center no-wrap">
+                  <span class="text-mono ns-muted q-mr-sm" style="font-size: 11px">{{ dashboardStore.systemStatus.tor.port }}</span>
+                  <q-badge color="amber" rounded class="ns-label">
+                    {{ dashboardStore.systemStatus.tor.status }}
+                  </q-badge>
+                </div>
+              </div>
+
               <div class="row items-center justify-between no-wrap full-width">
                 <div class="row items-center no-wrap q-mr-sm ellipsis">
                   <Cloud :size="18" class="ns-muted q-mr-md" />
                   <span class="text-white text-weight-medium ellipsis">INTELLIGENCE DB</span>
                 </div>
                 <div class="row items-center no-wrap">
-                  <span class="text-mono ns-muted q-mr-sm" style="font-size: 11px">
-                    {{ dashboardStore.systemStatus.firestore.throughput }}
-                  </span>
+                  <span class="text-mono ns-muted q-mr-sm" style="font-size: 11px">{{ dashboardStore.systemStatus.firestore.throughput }}</span>
                   <q-badge color="positive" rounded class="ns-label">
                     {{ dashboardStore.systemStatus.firestore.status }}
                   </q-badge>
@@ -115,7 +113,6 @@
       </div>
     </div>
 
-    <!-- 4. RECENT ACTIVITY (Full Width) -->
     <section>
       <div class="row items-center justify-between q-mb-md">
         <div class="ns-label">RECENT ACTIVITY</div>
@@ -124,7 +121,7 @@
         </router-link>
       </div>
       <q-table
-        :rows="dashboardStore.recentTasks"
+        :rows="recentActivityRows"
         :columns="columns"
         row-key="id"
         flat
@@ -152,31 +149,36 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, reactive } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from 'src/stores/dashboardStore'
-import { 
-  User, 
-  Globe, 
-  MapPin, 
-  FileSearch, 
-  Navigation, 
-  Code,
+import type { QTableColumn } from 'quasar'
+import {
   Activity,
-  Server,
+  Cloud,
   Database,
-  Cloud
+  Eye,
+  FileSearch,
+  Globe,
+  Mail,
+  MapPin,
+  Phone,
+  Code,
+  Server,
+  Shield,
+  User,
 } from 'lucide-vue-next'
 
 const router = useRouter()
 const dashboardStore = useDashboardStore()
 
-// 1. LIVE CLOCK
 const currentTime = ref(new Date().toLocaleString())
-let clockInterval: any = null
+let clockInterval: number | undefined
 
-onMounted(() => {
-  clockInterval = setInterval(() => {
+onMounted(async () => {
+  await dashboardStore.fetchDashboardData()
+
+  clockInterval = window.setInterval(() => {
     currentTime.value = new Date().toLocaleString('en-US', {
       weekday: 'short',
       year: 'numeric',
@@ -185,90 +187,86 @@ onMounted(() => {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false
+      hour12: false,
     })
   }, 1000)
-
-  animateStats()
 })
 
 onUnmounted(() => {
-  if (clockInterval) clearInterval(clockInterval)
+  if (clockInterval) {
+    clearInterval(clockInterval)
+  }
 })
 
-// 2. STATS ANIMATION
-const displayStats = reactive({
-  totalQueries: { label: 'TOTAL QUERIES', currentValue: 0, targetValue: dashboardStore.stats.totalQueries, prefix: '', suffix: '' },
-  activeTasks: { label: 'ACTIVE TASKS', currentValue: 0, targetValue: dashboardStore.stats.activeTasks, prefix: '', suffix: '' },
-  avgResolution: { label: 'AVG. RESOLUTION', currentValue: 0, targetValue: (dashboardStore.stats.avgResolutionMs / 1000), prefix: '', suffix: 's' },
-  modulesOnline: { label: 'MODULES ONLINE', currentValue: 0, targetValue: dashboardStore.stats.modulesOnline, prefix: '', suffix: '' }
-})
+const statsCards = computed(() => [
+  { label: 'TOTAL QUERIES', value: dashboardStore.stats.totalQueries, prefix: '', suffix: '' },
+  { label: 'ACTIVE TASKS', value: dashboardStore.stats.activeTasks, prefix: '', suffix: '' },
+  { label: 'AVG. RESOLUTION', value: dashboardStore.stats.avgResolutionMs / 1000, prefix: '', suffix: 's' },
+  { label: 'MODULES ONLINE', value: dashboardStore.stats.modulesOnline, prefix: '', suffix: '' },
+])
 
-const animateStats = () => {
-  const duration = 800
-  const frameRate = 60
-  const totalFrames = (duration / 1000) * frameRate
-  
-  Object.keys(displayStats).forEach(key => {
-    const k = key as keyof typeof displayStats
-    const increment = displayStats[k].targetValue / totalFrames
-    let current = 0
-    let frame = 0
-
-    const timer = setInterval(() => {
-      frame++
-      current += increment
-      if (frame >= totalFrames) {
-        displayStats[k].currentValue = displayStats[k].targetValue
-        clearInterval(timer)
-      } else {
-        displayStats[k].currentValue = Math.floor(current * 10) / 10
-      }
-    }, 1000 / frameRate)
-  })
-}
-
-// 3. MODULES CONFIG
 const modules = [
-  { name: 'Username Recon', desc: 'Cross-platform identity tracking', icon: User, status: 'ACTIVE' },
-  { name: 'Domain Analysis', desc: 'DNS, WHOIS, record lookup', icon: Globe, status: 'ACTIVE' },
-  { name: 'IP Intelligence', desc: 'Geolocation and WHOIS data', icon: MapPin, status: 'ACTIVE' },
-  { name: 'Metadata Extraction', desc: 'EXIF and file metadata', icon: FileSearch, status: 'ACTIVE' },
-  { name: 'Geolocation', desc: 'Coordinate and location mapping', icon: Navigation, status: 'ACTIVE' },
-  { name: 'Web Scraper', desc: 'Headless browser intelligence', icon: Code, status: 'ACTIVE' }
+  { key: 'darkweb', name: 'Onion Crawler', desc: '.onion crawler via Tor SOCKS5', icon: Eye, status: 'ACTIVE' },
+  { key: 'domain', name: 'Domain Analysis', desc: 'DNS, WHOIS, TLS, subdomains', icon: Globe, status: 'ACTIVE' },
+  { key: 'ip', name: 'IP Intelligence', desc: 'Geolocation, ASN, PTR records', icon: MapPin, status: 'ACTIVE' },
+  { key: 'phone', name: 'Phone Lookup', desc: 'Skip Tracer — carrier & line type', icon: Phone, status: 'ACTIVE' },
+  { key: 'scraper', name: 'Web Scraper', desc: 'Headless browser intelligence', icon: Code, status: 'ACTIVE' },
+  { key: 'email', name: 'Email Hunt', desc: 'Gravatar + HaveIBeenPwned HIBP', icon: Mail, status: 'ACTIVE' },
+  { key: 'username', name: 'Username Recon', desc: 'GitHub · Reddit · HN · Twitter/X', icon: User, status: 'ACTIVE' },
+  { key: 'metadata', name: 'Metadata Extract', desc: 'EXIF and file forensics', icon: FileSearch, status: 'ACTIVE' },
+  { key: 'deepsearch', name: 'Deep Search', desc: 'Multi-billion record LeakDB scan', icon: Database, status: 'ACTIVE' },
 ]
 
-const navigateToModule = (name: string) => {
-  router.push(`/search?module=${encodeURIComponent(name.toLowerCase())}`)
+const navigateToModule = (moduleKey: string) => {
+  router.push(`/search?module=${encodeURIComponent(moduleKey)}`)
 }
 
-// 4. ACTIVITY TABLE CONFIG
-const columns: any[] = [
+const recentActivityRows = computed(() =>
+  dashboardStore.recentTasks.map((task) => ({
+    id: task.task_id,
+    module: String(task.module).toUpperCase(),
+    target: task.target,
+    status: String(task.status).toUpperCase(),
+    duration: task.duration_ms == null ? '—' : `${(task.duration_ms / 1000).toFixed(1)}s`,
+    timestamp: task.completed_at || task.created_at,
+  }))
+)
+
+const columns: QTableColumn<any>[] = [
   { name: 'id', label: 'TASK ID', field: 'id', align: 'left', classes: 'text-mono ns-muted' },
   { name: 'module', label: 'MODULE', field: 'module', align: 'left', classes: 'text-weight-medium' },
   { name: 'target', label: 'TARGET', field: 'target', align: 'left' },
   { name: 'status', label: 'STATUS', field: 'status', align: 'left' },
   { name: 'duration', label: 'DURATION', field: 'duration', align: 'right', classes: 'text-mono ns-muted' },
-  { name: 'timestamp', label: 'TIMESTAMP', field: 'timestamp', align: 'right' }
+  { name: 'timestamp', label: 'TIMESTAMP', field: 'timestamp', align: 'right' },
 ]
 
 const getStatusClass = (status: string) => {
   switch (status) {
-    case 'QUEUED': return 'bg-amber text-black'
-    case 'PROCESSING': return 'bg-blue text-white animate-pulse'
-    case 'COMPLETED': return 'bg-positive text-black'
-    case 'FAILED': return 'bg-negative text-white'
-    default: return ''
+    case 'QUEUED':
+      return 'bg-amber text-black'
+    case 'PROCESSING':
+      return 'bg-blue text-white animate-pulse'
+    case 'COMPLETED':
+      return 'bg-positive text-black'
+    case 'FAILED':
+      return 'bg-negative text-white'
+    default:
+      return ''
   }
 }
 
-const onRowClick = (evt: any, row: any) => {
+const onRowClick = (_evt: unknown, row: { id: string }) => {
   router.push(`/results/${row.id}`)
 }
 </script>
 
-<style lang="css" scoped>
-/* STATS STRIP */
+<style scoped>
+.dashboard-page {
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
 .ns-stat-card {
   background: var(--ns-bg-surface);
   padding: var(--ns-space-5);
@@ -284,19 +282,22 @@ const onRowClick = (evt: any, row: any) => {
   color: var(--ns-accent);
 }
 
-/* MODULE GRID */
 .ns-module-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--ns-space-4);
 }
 
-@media (max-width: 1439px) { /* Under lg breakpoint */
-  .ns-module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 1439px) {
+  .ns-module-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-@media (max-width: 1023px) { /* Under md breakpoint */
-  .ns-module-grid { grid-template-columns: 1fr; }
+@media (max-width: 1023px) {
+  .ns-module-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .ns-module-card {
@@ -318,7 +319,6 @@ const onRowClick = (evt: any, row: any) => {
   color: var(--ns-accent);
 }
 
-/* SYSTEM STATUS */
 .ns-status-panel {
   background: var(--ns-bg-surface);
   border: 1px solid var(--ns-border);
@@ -334,8 +334,13 @@ const onRowClick = (evt: any, row: any) => {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 .hover-underline:hover {

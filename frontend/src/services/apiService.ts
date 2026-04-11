@@ -3,7 +3,7 @@ import { Notify } from 'quasar';
 import { AxiosError, AxiosResponse } from 'axios';
 
 // --- TYPES ---
-export type Module = 'username' | 'domain' | 'ip' | 'metadata' | 'scraper' | 'darkweb' | 'phone' | 'email' | 'deepsearch';
+export type Module = 'username' | 'domain' | 'ip' | 'metadata' | 'scraper' | 'darkweb' | 'phone' | 'email' | 'deepsearch' | 'geolocation';
 export type TaskStatus = 'queued' | 'processing' | 'completed' | 'failed';
 
 export interface Task {

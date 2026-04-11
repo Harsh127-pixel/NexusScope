@@ -66,6 +66,9 @@ def _normalize_module_name(module_raw: str) -> str:
     value = module_raw.strip().lower()
     collapsed = re.sub(r"[\s_-]+", "", value)
 
+    if "deepsearch" in collapsed or "leakdb" in collapsed or "leakosint" in collapsed:
+        return "deepsearch"
+
     alias_map = {
         "darkweb": "darkweb",
         "onion": "darkweb",
@@ -90,8 +93,14 @@ def _normalize_module_name(module_raw: str) -> str:
         "webscan": "scraper",
         "crawl": "scraper",
         "deepsearch": "deepsearch",
+        "theater4": "deepsearch",
+        "theateriv": "deepsearch",
+        "theaterivdeepsearch": "deepsearch",
+        "theaterivdeepsearchleakdbenumeration": "deepsearch",
         "leakdb": "deepsearch",
         "leakdbscan": "deepsearch",
+        "leaksearch": "deepsearch",
+        "breachsearch": "deepsearch",
     }
     return alias_map.get(collapsed, value)
 
