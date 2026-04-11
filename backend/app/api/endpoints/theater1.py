@@ -26,7 +26,7 @@ async def start_darkweb_scan(payload: DarkWebRequest):
             "id": task_id,
             "module": "darkweb",
             "target": payload.target,
-            "status": "pending",
+            "status": "queued",
             "created_at": time.time(),
             "options": payload.options,
             "result": None

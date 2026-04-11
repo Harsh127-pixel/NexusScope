@@ -34,7 +34,7 @@ async def _create_task(module: str, payload: ReconRequest):
     async with TASK_LOCK:
         TASKS[task_id] = {
             "id": task_id, "module": module, "target": payload.target, 
-            "status": "pending", "created_at": time.time(), "options": payload.options, "result": None
+            "status": "queued", "created_at": time.time(), "options": payload.options, "result": None
         }
     return {"task_id": task_id}
 

@@ -40,7 +40,7 @@ async def create_investigation(payload: InvestigationRequest, background_tasks: 
             "id": task_id,
             "module": module,
             "target": payload.target,
-            "status": "pending",
+            "status": "queued",
             "created_at": time.time(),
             "result": None,
             "error": None,

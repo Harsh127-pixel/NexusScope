@@ -82,7 +82,7 @@ async def _process_update(update: dict):
     
     task_id = str(uuid.uuid4())
     TASKS[task_id] = {
-        "id": task_id, "module": active_mod, "target": text, "status": "pending",
+        "id": task_id, "module": active_mod, "target": text, "status": "queued",
         "created_at": time.time(), "result": None, "error": None, "options": {"timeout": 15}
     }
     
