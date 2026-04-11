@@ -10,6 +10,7 @@ from app.core.state import TASKS, TASK_LOCK
 from app.api.endpoints.theater1 import _onion_crawler
 from app.api.endpoints.theater2 import _domain_lookup, _ip_lookup, _scrape_web, _phone_lookup
 from app.api.endpoints.theater3 import _image_metadata, _username_lookup, _email_lookup
+from app.api.endpoints.theater4 import _run_deepsearch, _call_leakosint, _format_results
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -68,6 +69,9 @@ async def _execute_task(task_id: str):
         elif module == "scraper": result = await _scrape_web(target, proxy, options.get("timeout", 12), options.get("use_playwright", False))
         elif module == "phone": result = await _phone_lookup(target)
         elif module == "email": result = await _email_lookup(target)
+        elif module == "deepsearch":
+            raw = await _call_leakosint(target, options.get("limit", 100), options.get("lang", "en"))
+            result = _format_results(raw, target, options.get("limit", 100))
         else: raise ValueError(f"Unknown module: {module}")
         
         task["status"] = "completed"

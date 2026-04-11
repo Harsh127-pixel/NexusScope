@@ -65,6 +65,7 @@ from app.api.endpoints.investigations import router as investigations_router
 from app.api.endpoints.theater1 import router as theater1_router
 from app.api.endpoints.theater2 import router as theater2_router
 from app.api.endpoints.theater3 import router as theater3_router
+from app.api.endpoints.theater4 import router as theater4_router
 from app.api.endpoints.bot import router as bot_router
 
 # ── S3 Leak Hunting Module ────────────────────
@@ -464,6 +465,7 @@ app.include_router(investigations_router, prefix="/api/v1", tags=["Unified Inves
 app.include_router(theater1_router, prefix="/api/v1/theater1", tags=["Theater I — Dark Web"])
 app.include_router(theater2_router, prefix="/api/v1/theater2", tags=["Theater II — Recon"])
 app.include_router(theater3_router, prefix="/api/v1/theater3", tags=["Theater III — Identity"])
+app.include_router(theater4_router, prefix="/api/v1/deepsearch", tags=["Theater IV — Deep Search"])
 app.include_router(bot_router, prefix="/api/v1/chatbot", tags=["Chatbot — Telegram"])
 
 

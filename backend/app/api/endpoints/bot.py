@@ -23,7 +23,8 @@ def get_menu_keyboard():
         "inline_keyboard": [
             [{"text": "🌐 Domain Intel", "callback_data": "set_mod:domain"}, {"text": "📡 IP Intel", "callback_data": "set_mod:ip"}],
             [{"text": "🕷️ Dark Web", "callback_data": "set_mod:darkweb"}, {"text": "👤 Username Recon", "callback_data": "set_mod:username"}],
-            [{"text": "📧 Email OSINT", "callback_data": "set_mod:email"}, {"text": "🖼️ Metadata", "callback_data": "set_mod:metadata"}]
+            [{"text": "📧 Email OSINT", "callback_data": "set_mod:email"}, {"text": "🖼️ Metadata", "callback_data": "set_mod:metadata"}],
+            [{"text": "🔴 DEEP SEARCH (LeakDB)", "callback_data": "set_mod:deepsearch"}],
         ]
     }
 
@@ -61,8 +62,21 @@ async def _process_update(update: dict):
         await _send_telegram(chat_id, welcome, get_menu_keyboard())
         return
 
+    # /api — show API info and token
+    if text.lower() == "/api":
+        await _send_telegram(chat_id,
+            "🔑 <b>NexusScope API Access</b>\n\n"
+            f"Your API Token:\n<code>{TELEGRAM_BOT_TOKEN}</code>\n\n"
+            "<b>Deep Search endpoint:</b>\n"
+            "<code>POST /api/v1/deepsearch/search</code>\n\n"
+            "<b>Example body:</b>\n"
+            '<code>{"target": "user@email.com", "limit": 100}</code>\n\n'
+            "📖 Full docs at: <a href='https://nexusscope.vercel.app/docs'>API Docs</a>"
+        )
+        return
+
     # Handle explicit slash commands: /mod <target>
-    cmd_match = re.match(r"^/(ip|domain|darkweb|username|metadata|email)\s+(.+)$", text, re.I)
+    cmd_match = re.match(r"^/(ip|domain|darkweb|username|metadata|email|deepsearch|phone)\s+(.+)$", text, re.I)
     if cmd_match:
         active_mod = cmd_match.group(1).lower()
         text = cmd_match.group(2).strip()
