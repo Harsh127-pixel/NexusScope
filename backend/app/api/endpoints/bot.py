@@ -51,7 +51,7 @@ async def _process_update(update: dict):
     chat_id = message["chat"]["id"]
     text = message.get("text", "").strip()
 
-    # 1. Greetings / Start
+    # 1. Greetings / Start / Commands
     if text.lower() in ["/start", "hi", "hello", "help", "menu"]:
         BOT_STATE.pop(chat_id, None)
         welcome = (
@@ -61,8 +61,13 @@ async def _process_update(update: dict):
         await _send_telegram(chat_id, welcome, get_menu_keyboard())
         return
 
-    # 2. Process Target
-    active_mod = BOT_STATE.get(chat_id)
+    # Handle explicit slash commands: /mod <target>
+    cmd_match = re.match(r"^/(ip|domain|darkweb|username|metadata|email)\s+(.+)$", text, re.I)
+    if cmd_match:
+        active_mod = cmd_match.group(1).lower()
+        text = cmd_match.group(2).strip()
+    else:
+        active_mod = BOT_STATE.get(chat_id)
     
     # Auto-inference if no active session
     if not active_mod:
