@@ -2,6 +2,7 @@
 // Firebase client SDK — initialised once, imported everywhere.
 
 import { initializeApp, getApps, getApp } from 'firebase/app'
+import { getAnalytics } from 'firebase/analytics'
 import {
   getAuth,
   GoogleAuthProvider,
@@ -26,6 +27,7 @@ const firebaseConfig = {
   storageBucket:     import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId:             import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId:     import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 }
 
 // Avoid duplicate initialisation during HMR
@@ -33,6 +35,7 @@ const firebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig)
 
 export const auth  = getAuth(firebaseApp)
 export const db    = getFirestore(firebaseApp)
+export const analytics = getAnalytics(firebaseApp)
 export const googleProvider = new GoogleAuthProvider()
 googleProvider.setCustomParameters({ prompt: 'select_account' })
 

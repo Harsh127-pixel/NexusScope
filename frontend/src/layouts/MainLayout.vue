@@ -182,6 +182,8 @@
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useQuasar } from 'quasar'
 import { useRoute, useRouter } from 'vue-router'
 import { useAppStore } from 'src/stores/appStore'
 import { useAuthStore } from 'src/stores/authStore'
@@ -198,6 +200,7 @@ import {
   LogOut
 } from 'lucide-vue-next'
 
+const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()
