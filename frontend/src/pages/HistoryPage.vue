@@ -12,7 +12,7 @@
       <div class="row items-center q-gutter-sm flex-wrap">
         <!-- Global Search -->
         <q-input 
-          v-model="filters.query" 
+          v-model="filters.search" 
           dense 
           filled 
           borderless
@@ -27,7 +27,7 @@
 
         <!-- Module Filter -->
         <q-select
-          v-model="filters.modules"
+          v-model="filters.module"
           :options="moduleOptions"
           multiple
           dense
@@ -39,8 +39,8 @@
           map-options
           counter
         >
-          <template v-slot:selection="{ index }">
-            <span v-if="index === 0" class="ns-label text-caption">SELECTED</span>
+          <template v-slot:selected-item="scope">
+            <span v-if="scope.index === 0" class="ns-label text-caption">SELECTED</span>
           </template>
         </q-select>
 
@@ -208,20 +208,23 @@
   </q-page>
 </template>
 
+
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useQuasar, format } from 'quasar'
+import { useQuasar } from 'quasar'
 import { useHistoryStore } from 'src/stores/historyStore'
+import { storeToRefs } from 'pinia'
 import { 
   Search, User, Globe, MapPin, FileSearch, 
   Navigation, Code, Activity, ClipboardList, 
-  RotateCcw, Trash2, Eye 
+  RotateCcw, Trash2, Eye, Database 
 } from 'lucide-vue-next'
 
 const $q = useQuasar()
 const router = useRouter()
 const historyStore = useHistoryStore()
+const { filters, filteredTasks } = storeToRefs(historyStore)
 
 const selectedRows = ref([])
 const pagination = ref({
@@ -231,74 +234,47 @@ const pagination = ref({
   rowsPerPage: 25
 })
 
-const filters = ref({
-  query: '',
-  modules: [],
-  status: 'All',
-  dateRange: null as any
-})
-
 const moduleOptions = [
-  { label: 'USERNAME', value: 'social', icon: User },
-  { label: 'DNS', value: 'dns', icon: Globe },
-  { label: 'IP', value: 'ip', icon: MapPin },
-  { label: 'METADATA', value: 'metadata', icon: FileSearch },
-  { label: 'SCRAPER', value: 'web', icon: Code }
+  { label: 'ALL MODULES', value: 'All' },
+  { label: 'DOMAIN', value: 'domain' },
+  { label: 'IP', value: 'ip' },
+  { label: 'USERNAME', value: 'username' },
+  { label: 'EMAIL', value: 'email' },
+  { label: 'PHONE', value: 'phone' },
+  { label: 'METADATA', value: 'metadata' },
+  { label: 'SCRAPER', value: 'scraper' },
+  { label: 'DARK WEB', value: 'darkweb' },
+  { label: 'DEEP SEARCH', value: 'deepsearch' }
 ]
 
 const statusOptions = ['All', 'Completed', 'Failed', 'Processing', 'Queued']
 
 const columns = [
-  { name: 'id', label: 'TASK ID', field: 'id', align: 'left', sortable: true },
-  { name: 'module', label: 'MODULE', field: 'module', align: 'left', sortable: true },
-  { name: 'target', label: 'TARGET', field: 'target', align: 'left', sortable: true },
-  { name: 'status', label: 'STATUS', field: 'status', align: 'left', sortable: true },
-  { name: 'started', label: 'STARTED', field: 'started_at', align: 'left', sortable: true },
-  { name: 'duration', label: 'DURATION', field: 'duration', align: 'right' },
-  { name: 'actions', label: 'ACTIONS', field: 'actions', align: 'right' }
+  { name: 'task_id', label: 'TASK ID', field: 'task_id', align: 'left' as const, sortable: true },
+  { name: 'module', label: 'MODULE', field: 'module', align: 'left' as const, sortable: true },
+  { name: 'target', label: 'TARGET', field: 'target', align: 'left' as const, sortable: true },
+  { name: 'status', label: 'STATUS', field: 'status', align: 'left' as const, sortable: true },
+  { name: 'started', label: 'STARTED', field: 'created_at', align: 'left' as const, sortable: true },
+  { name: 'duration', label: 'DURATION', field: 'duration_ms', align: 'right' as const },
+  { name: 'actions', label: 'ACTIONS', field: 'task_id', align: 'right' as const }
 ]
 
-// Filtering Logic
-const filteredTasks = computed(() => {
-  return historyStore.tasks.filter(task => {
-    // Query Search
-    const q = filters.value.query.toLowerCase()
-    const matchesQuery = !q || task.target.toLowerCase().includes(q) || task.id.toLowerCase().includes(q)
-    
-    // Module Filter
-    const matchesModule = filters.value.modules.length === 0 || filters.value.modules.includes(task.module)
-    
-    // Status Filter
-    const matchesStatus = filters.value.status === 'All' || task.status.toLowerCase() === filters.value.status.toLowerCase()
-    
-    // Date Range (simplified)
-    let matchesDate = true
-    if (filters.value.dateRange) {
-      const taskDate = new Date(task.started_at).toISOString().split('T')[0]
-      if (filters.value.dateRange.from) {
-        matchesDate = taskDate >= filters.value.dateRange.from && taskDate <= filters.value.dateRange.to
-      } else {
-        matchesDate = taskDate === filters.value.dateRange
-      }
-    }
-
-    return matchesQuery && matchesModule && matchesStatus && matchesDate
-  })
+onMounted(() => {
+  historyStore.fetchHistory()
 })
 
+watch(() => historyStore.filters, () => {
+  historyStore.fetchHistory()
+}, { deep: true })
+
 const hasFilters = computed(() => {
-  return filters.value.query || filters.value.modules.length > 0 || filters.value.status !== 'All' || filters.value.dateRange
+  return historyStore.filters.search || historyStore.filters.module !== 'All' || historyStore.filters.status !== 'All'
 })
 
 const clearFilters = () => {
-  filters.value = { query: '', modules: [], status: 'All', dateRange: null }
+  historyStore.filters = { search: '', module: 'All', status: 'All', dateRange: null }
 }
 
-watch(filters, () => {
-  pagination.value.page = 1
-}, { deep: true })
-
-// Helper Functions
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'completed': return 'positive'
@@ -311,32 +287,43 @@ const getStatusColor = (status: string) => {
 
 const getModuleIcon = (module: string) => {
   switch (module) {
-    case 'dns': return Globe
-    case 'social': return User
+    case 'domain': return Globe
+    case 'username': return User
     case 'ip': return MapPin
     case 'metadata': return FileSearch
-    case 'web': return Code
+    case 'scraper': return Code
+    case 'darkweb': return Eye
+    case 'deepsearch': return Database
     default: return Activity
   }
 }
 
 const getModuleTextClass = (module: string) => {
   switch (module) {
-    case 'dns': return 'text-indigo-4'
-    case 'social': return 'text-pink-4'
+    case 'domain': return 'text-indigo-4'
+    case 'username': return 'text-pink-4'
     case 'ip': return 'text-amber-4'
     case 'metadata': return 'text-cyan-4'
-    case 'web': return 'text-green-4'
+    case 'scraper': return 'text-green-4'
+    case 'darkweb': return 'text-purple-4'
+    case 'deepsearch': return 'text-primary'
     default: return 'text-primary'
   }
 }
 
-const formatRelative = (timestamp: number) => {
-  const diff = Date.now() - timestamp
+const formatRelative = (timestamp: string) => {
+  if (!timestamp) return '...'
+  const diff = Date.now() - new Date(timestamp).getTime()
   if (diff < 60000) return 'Just now'
   if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`
   if (diff < 86400000) return `${Math.floor(diff / 3600000)} hours ago`
   return new Date(timestamp).toLocaleDateString()
+}
+
+const formatDuration = (ms: number | null) => {
+  if (!ms) return '-'
+  if (ms < 1000) return `${ms}ms`
+  return `${(ms / 1000).toFixed(1)}s`
 }
 
 // Actions
@@ -344,89 +331,66 @@ const viewResults = (id: string) => router.push(`/results/${id}`)
 
 const reRun = (task: any) => {
   $q.notify({ message: `Re-dispatching investigation for ${task.target}...`, color: 'primary' })
-  setTimeout(() => {
-    router.push(`/results/new-task-${Math.random().toString(36).substr(2, 4)}`)
-  }, 500)
+  router.push(`/search?module=${task.module}&target=${task.target}`)
 }
 
 const confirmDelete = (id: string) => {
   $q.dialog({
     title: 'CONFIRM DELETION',
-    message: 'This will permanently remove the investigation evidence from the local index.',
+    message: 'Permanently remove this evidence record?',
     dark: true,
     ok: { label: 'DELETE', color: 'negative', flat: true },
     cancel: { label: 'CANCEL', flat: true }
   }).onOk(() => {
     historyStore.deleteTask(id)
-    $q.notify({ message: 'Record deleted', color: 'negative', icon: 'delete' })
+    $q.notify({ message: 'Record deleted', color: 'negative', icon: 'delete', position: 'top' })
   })
 }
 
 const confirmDeleteBulk = () => {
+  const ids = selectedRows.value.map((r: any) => r.task_id)
   $q.dialog({
     title: 'DELETE SELECTION',
-    message: `Ready to purge ${selectedRows.value.length} intelligence records? This action cannot be undone.`,
+    message: `Purge ${ids.length} records?`,
     dark: true,
-    ok: { label: 'PURGE RECORDS', color: 'negative', flat: true },
+    ok: { label: 'PURGE', color: 'negative', flat: true },
     cancel: { label: 'CANCEL', flat: true }
   }).onOk(() => {
-    historyStore.deleteBulk(selectedRows.value.map((r: any) => r.id))
+    historyStore.deleteMany(ids)
     selectedRows.value = []
-    $q.notify({ message: 'Records purged', color: 'negative' })
+    $q.notify({ message: 'Records purged', color: 'negative', position: 'top' })
   })
 }
 
 const exportSelected = () => {
-  const data = JSON.stringify(selectedRows.value, null, 2)
-  const blob = new Blob([data], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `nexus_history_export_${Date.now()}.json`
-  a.click()
-  $q.notify({ message: 'Export generated', color: 'positive' })
+  historyStore.exportTasks(selectedRows.value.map((r: any) => r.task_id))
+  $q.notify({ message: 'Export generated', color: 'positive', position: 'top' })
 }
 
-// Empty State Content
 const emptyStateHeading = computed(() => hasFilters.value ? 'No matching records' : 'Intelligence archive empty')
-const emptyStateSub = computed(() => hasFilters.value ? 'Try adjusting your tactical filters' : 'Run your first investigative query to begin building history')
+const emptyStateSub = computed(() => hasFilters.value ? 'Try adjusting tactical filters' : 'Start a query to begin building history')
 
 </script>
 
 <style scoped>
-.ns-history-search {
-  width: 280px;
-}
-
-.ns-filter-select {
-  width: 160px;
-}
-
+.ns-history-search { width: 280px; }
+.ns-filter-select { width: 160px; }
 .ns-history-table {
   background: var(--ns-bg-surface);
   border: 1px solid var(--ns-border);
 }
-
 .ns-bulk-bar {
   background: var(--ns-bg-elevated);
-  border-top: 1px solid var(--ns-accent);
+  border-top: 2px solid var(--ns-accent);
   width: 100%;
   left: 0;
   right: 0;
   z-index: 1000;
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.5);
 }
-
 .opacity-2 { opacity: 0.2; }
-
-/* Transitions */
-.slide-fade-enter-active, .slide-fade-leave-active {
-  transition: all 0.3s ease-out;
-}
-.slide-fade-enter-from, .slide-fade-leave-to {
-  transform: translateY(100%);
-  opacity: 0;
-}
-
-.hover-accent:hover { color: var(--ns-accent); transition: color 0.15s; }
+.slide-fade-enter-active, .slide-fade-leave-active { transition: all 0.3s ease-out; }
+.slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(100%); opacity: 0; }
 .color-primary { color: var(--ns-accent); }
 </style>
+

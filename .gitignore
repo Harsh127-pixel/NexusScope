@@ -76,6 +76,7 @@ htmlcov/
 *.crt
 # Explicitly ignore GCP service account files
 shared/service-account.json
+firebase-service-account.json
 backend/.env
 frontend/.env.local
 frontend/.env.development

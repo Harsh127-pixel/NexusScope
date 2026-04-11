@@ -1027,6 +1027,48 @@
         </q-tab-panel>
       </q-tab-panels>
     </div>
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <!-- THEATER 4: DEEP SEARCH (LEAKOSINT) RESULTS                -->
+      <!-- ═══════════════════════════════════════════════════════════ -->
+      <section v-if="currentTask?.module === 'deepsearch'" class="ns-report-card q-pa-xl q-mb-xl" style="border-color: rgba(0,212,255,0.4)">
+        <div class="row items-center q-gutter-x-sm q-mb-lg">
+          <Database :size="24" style="color:#00d4ff" />
+          <div>
+            <div class="ns-label" style="color:#00d4ff">THEATER IV — DEEP SEARCH (LEAKDB ENUMERATION)</div>
+            <h2 class="ns-heading-md text-white q-ma-none">{{ currentTask?.target }}</h2>
+          </div>
+        </div>
+
+        <!-- Investigation Logs -->
+        <div v-if="currentTask?.result?.leaks?.length" class="q-mb-lg">
+          <div class="ns-label q-mb-md">BURIED INTELLIGENCE DISCOVERED ({{ currentTask?.result?.leaks?.length }})</div>
+          <div class="column q-gutter-y-md">
+            <q-card
+              v-for="(leak, idx) in currentTask?.result?.leaks"
+              :key="idx"
+              flat class="ns-report-block q-pa-md ns-leak-entry"
+            >
+              <div class="row items-start justify-between">
+                <div class="col">
+                  <div class="row items-center q-gutter-x-sm">
+                    <span class="text-weight-bold text-white">{{ leak.email || 'NO_IDENTIFIER' }}</span>
+                    <q-badge v-if="leak.password" color="primary" text-color="dark" class="text-weight-bold text-mono">
+                      PWD: {{ leak.password }}
+                    </q-badge>
+                  </div>
+                  <div class="ns-muted text-caption q-mt-xs text-mono">
+                    SOURCE: <span class="text-primary">{{ leak.source || 'LEAK_DB_RECORDS' }}</span> 
+                    <span v-if="leak.hash" class="q-ml-md">HASH: {{ leak.hash }}</span>
+                  </div>
+                </div>
+                <div class="column items-end">
+                  <q-badge color="dark" class="ns-label">{{ leak.date || 'UNKNOWN_DATE' }}</q-badge>
+                </div>
+              </div>
+            </q-card>
+          </div>
+        </div>
+      </section>
 
     <!-- FAILED STATE -->
     <div v-if="currentTask?.status === 'failed'" class="column flex-center q-py-xl">
@@ -1052,7 +1094,7 @@ import { useResultsStore } from 'src/stores/resultsStore'
 import { useQuasar, copyToClipboard, QTableProps } from 'quasar'
 import {
   Target, User, Globe, MapPin, FileSearch,
-  Navigation, Code, Layers, Search, Eye, Phone, Mail, Shield, ExternalLink
+  Navigation, Code, Layers, Search, Eye, Phone, Mail, Shield, ExternalLink, Database
 } from 'lucide-vue-next'
 import VueJsonPretty from 'vue-json-pretty'
 import 'vue-json-pretty/lib/styles.css'
@@ -1172,6 +1214,7 @@ const getStatusColor = computed(() => {
   if (s === 'completed') return 'positive'
   if (s === 'processing') return 'blue'
   if (s === 'failed') return 'negative'
+  if (s === 'queued') return 'amber'
   return 'grey'
 })
 
@@ -1182,6 +1225,7 @@ const getModuleColor = computed(() => {
   if (t === 'phone')   return 'blue-7'
   if (t === 'email')   return 'orange-7'
   if (t === 'username') return 'teal-7'
+  if (t === 'deepsearch') return 'cyan-7'
   return 'primary'
 })
 
@@ -1193,6 +1237,7 @@ const getActiveModuleIcon = computed(() => {
   if (t === 'phone')    return Phone
   if (t === 'email')    return Mail
   if (t === 'ip')       return MapPin
+  if (t === 'deepsearch') return Database
   return Layers
 })
 

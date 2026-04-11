@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import { apiService, Module } from 'src/services/apiService';
 import { useAppStore } from './appStore';
 
-export type Theater = 'darkweb' | 'recon' | 'identity';
+export type Theater = 'darkweb' | 'recon' | 'identity' | 'deepsearch';
 
 export interface ModuleOption {
   label: string;
@@ -72,6 +72,14 @@ export const MODULE_OPTIONS: ModuleOption[] = [
     theater: 'identity',
     description: 'EXIF metadata from image URL',
     placeholder: 'https://example.com/photo.jpg',
+  },
+  // ── Theater 4: Deep Search (LeakOSINT) ───────────────────────
+  {
+    label: 'LEAK DB SCAN',
+    value: 'deepsearch',
+    theater: 'deepsearch',
+    description: 'Cross-reference billions of records via LeakOSINT API (Theater IV)',
+    placeholder: 'Email, IP, Name, or Phone number',
   },
 ];
 

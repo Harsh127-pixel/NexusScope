@@ -56,9 +56,25 @@
           <div class="theater-card__body">
             <div class="theater-card__label">THEATER III</div>
             <div class="theater-card__name">Identity &amp; Credential Hunting</div>
-            <div class="theater-card__tools">h8mail · OSINT-SPY · Sherlock · Social Mapper</div>
+            <div class="theater-card__tools">h8mail · Gravatar · Sherlock · Social Mapper</div>
           </div>
           <div class="theater-card__badge" v-if="searchStore.selectedTheater === 'identity'">ACTIVE</div>
+        </div>
+
+        <!-- Theater 4: Deep Search -->
+        <div
+          class="theater-card"
+          :class="{ 'theater-card--active': searchStore.selectedTheater === 'deepsearch', 'theater-card--deepsearch': true }"
+          @click="searchStore.setTheater('deepsearch')"
+          id="theater-deepsearch"
+        >
+          <div class="theater-card__icon"><Database :size="28" /></div>
+          <div class="theater-card__body">
+            <div class="theater-card__label">THEATER IV</div>
+            <div class="theater-card__name">Deep Search (LeakDB)</div>
+            <div class="theater-card__tools">LeakOSINT · Multi-Billion Records · Data Dumps</div>
+          </div>
+          <div class="theater-card__badge" v-if="searchStore.selectedTheater === 'deepsearch'">ACTIVE</div>
         </div>
       </div>
 
@@ -263,16 +279,18 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   Search, Settings, Zap, Globe, MapPin, Code, User,
-  Mail, Phone, Shield, FileSearch, Navigation, Eye
+  Mail, Phone, Shield, FileSearch, Navigation, Eye, Database
 } from 'lucide-vue-next'
 import { useQuasar } from 'quasar'
 import { useSearchStore, Theater } from 'src/stores/searchStore'
+import { useResultsStore } from 'src/stores/resultsStore'
 import { Module } from 'src/services/apiService'
 
 const $q = useQuasar()
 const route = useRoute()
 const router = useRouter()
 const searchStore = useSearchStore()
+const resultsStore = useResultsStore()
 
 const submitted = ref(false)
 const showAdvanced = ref(false)
@@ -312,6 +330,7 @@ const inputLabel = computed(() => {
     darkweb: 'ONION URL / .onion ADDRESS',
     phone: 'PHONE NUMBER (E.164)',
     email: 'TARGET EMAIL ADDRESS',
+    deepsearch: 'SEARCH TERM (EMAIL, IP, NAME, PHONE)',
   }
   return labels[searchStore.selectedModule] ?? 'INVESTIGATION TARGET'
 })
@@ -335,12 +354,13 @@ function moduleIcon(module: string) {
     darkweb: Eye,
     phone: Phone,
     email: Mail,
+    deepsearch: Database,
   }
   return map[module] ?? Search
 }
 
 function theaterNum(theater: Theater) {
-  return { darkweb: 'I', recon: 'II', identity: 'III' }[theater]
+  return { darkweb: 'I', recon: 'II', identity: 'III', deepsearch: 'IV' }[theater]
 }
 
 function theaterLabel(theater: Theater) {
@@ -348,11 +368,15 @@ function theaterLabel(theater: Theater) {
     darkweb: 'Theater I — Dark Web / Onion',
     recon: 'Theater II — General Recon',
     identity: 'Theater III — Identity & Credential',
+    deepsearch: 'Theater IV — Deep Search (LeakDB)',
   }[theater]
 }
 
 const startInvestigation = async () => {
   try {
+    // Clear previous results to prevent stale data flash
+    resultsStore.reset()
+    
     const id = await searchStore.dispatchQuery({
       timeout: Number(advOptions.timeout) || 12,
       use_playwright: advOptions.usePlaywright,
@@ -390,11 +414,15 @@ const startInvestigation = async () => {
 /* ── Theater Grid ─────────────────────────────────────────── */
 .theater-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
 }
 
-@media (max-width: 860px) {
+@media (max-width: 1100px) {
+  .theater-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 600px) {
   .theater-grid { grid-template-columns: 1fr; }
 }
 
@@ -403,13 +431,13 @@ const startInvestigation = async () => {
   background: var(--ns-bg-surface);
   border: 1px solid var(--ns-border);
   border-radius: 14px;
-  padding: 22px 20px;
+  padding: 18px 16px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 12px;
 }
 
 .theater-card::before {
@@ -421,9 +449,10 @@ const startInvestigation = async () => {
   border-radius: inherit;
 }
 
-.theater-card--darkweb::before  { background: radial-gradient(circle at top left, rgba(139,92,246,0.18) 0%, transparent 70%); }
-.theater-card--recon::before    { background: radial-gradient(circle at top left, rgba(56,189,248,0.12) 0%, transparent 70%); }
-.theater-card--identity::before { background: radial-gradient(circle at top left, rgba(249,115,22,0.14) 0%, transparent 70%); }
+.theater-card--darkweb::before   { background: radial-gradient(circle at top left, rgba(139,92,246,0.18) 0%, transparent 70%); }
+.theater-card--recon::before     { background: radial-gradient(circle at top left, rgba(56,189,248,0.12) 0%, transparent 70%); }
+.theater-card--identity::before  { background: radial-gradient(circle at top left, rgba(249,115,22,0.14) 0%, transparent 70%); }
+.theater-card--deepsearch::before { background: radial-gradient(circle at top left, rgba(0,212,255,0.1) 0%, transparent 70%); }
 
 .theater-card:hover,
 .theater-card--active {
@@ -439,10 +468,13 @@ const startInvestigation = async () => {
 .theater-card--recon:hover    { border-color: rgba(56,189,248,0.5);  box-shadow: 0 0 24px rgba(56,189,248,0.15); }
 .theater-card--identity.theater-card--active,
 .theater-card--identity:hover { border-color: rgba(249,115,22,0.5);  box-shadow: 0 0 24px rgba(249,115,22,0.18); }
+.theater-card--deepsearch.theater-card--active,
+.theater-card--deepsearch:hover { border-color: rgba(0,212,255,0.4); box-shadow: 0 0 24px rgba(0,212,255,0.12); }
 
 .theater-card--darkweb  .theater-card__icon { color: #a855f7; }
 .theater-card--recon    .theater-card__icon { color: #38bdf8; }
 .theater-card--identity .theater-card__icon { color: #f97316; }
+.theater-card--deepsearch .theater-card__icon { color: var(--ns-accent); }
 
 .theater-card__icon {
   flex-shrink: 0;
@@ -549,9 +581,10 @@ const startInvestigation = async () => {
   border-radius: 999px;
 }
 
-.badge--darkweb  { background: rgba(139,92,246,0.25) !important; color: #c4b5fd !important; }
-.badge--recon    { background: rgba(56,189,248,0.2) !important;  color: #7dd3fc !important; }
-.badge--identity { background: rgba(249,115,22,0.2) !important;  color: #fb923c !important; }
+.badge--darkweb    { background: rgba(139,92,246,0.25) !important; color: #c4b5fd !important; }
+.badge--recon      { background: rgba(56,189,248,0.2) !important;  color: #7dd3fc !important; }
+.badge--identity   { background: rgba(249,115,22,0.2) !important;  color: #fb923c !important; }
+.badge--deepsearch  { background: rgba(0,212,255,0.15) !important; color: var(--ns-accent) !important; }
 
 /* ── Tor Banner ───────────────────────────────────────────── */
 .tor-banner {
@@ -611,9 +644,10 @@ const startInvestigation = async () => {
   transition: all 0.2s ease;
 }
 
-.launch-btn--darkweb  { background: linear-gradient(135deg, #7c3aed, #a855f7) !important; color: #fff !important; }
-.launch-btn--recon    { background: linear-gradient(135deg, #0284c7, #38bdf8) !important; color: #fff !important; }
-.launch-btn--identity { background: linear-gradient(135deg, #c2410c, #f97316) !important; color: #fff !important; }
+.launch-btn--darkweb   { background: linear-gradient(135deg, #7c3aed, #a855f7) !important; color: #fff !important; }
+.launch-btn--recon     { background: linear-gradient(135deg, #0284c7, #38bdf8) !important; color: #fff !important; }
+.launch-btn--identity  { background: linear-gradient(135deg, #c2410c, #f97316) !important; color: #fff !important; }
+.launch-btn--deepsearch { background: linear-gradient(135deg, #0099bb, #00d4ff) !important; color: #000 !important; font-weight: 800 !important; }
 
 .launch-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
 

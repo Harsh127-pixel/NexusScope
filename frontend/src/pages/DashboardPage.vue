@@ -165,9 +165,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, reactive } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from 'src/stores/dashboardStore'
+import { useQuasar } from 'quasar'
+
+const $q = useQuasar()
 import {
   User,
   Globe,
@@ -192,7 +195,9 @@ const dashboardStore = useDashboardStore()
 const currentTime = ref(new Date().toLocaleString())
 let clockInterval: any = null
 
-onMounted(() => {
+onMounted(async () => {
+  await dashboardStore.fetchDashboardData()
+  
   clockInterval = setInterval(() => {
     currentTime.value = new Date().toLocaleString('en-US', {
       weekday: 'short',
@@ -206,6 +211,15 @@ onMounted(() => {
     })
   }, 1000)
 
+  // Refresh data every 30s
+  const dataInterval = setInterval(() => {
+    dashboardStore.fetchDashboardData()
+  }, 30000)
+
+  onUnmounted(() => {
+    clearInterval(dataInterval)
+  })
+
   animateStats()
 })
 
@@ -215,37 +229,34 @@ onUnmounted(() => {
 
 // 2. STATS ANIMATION
 const displayStats = reactive({
-  totalQueries: { label: 'TOTAL QUERIES', currentValue: 0, targetValue: dashboardStore.stats.totalQueries, prefix: '', suffix: '' },
-  activeTasks: { label: 'ACTIVE TASKS', currentValue: 0, targetValue: dashboardStore.stats.activeTasks, prefix: '', suffix: '' },
-  avgResolution: { label: 'AVG. RESOLUTION', currentValue: 0, targetValue: (dashboardStore.stats.avgResolutionMs / 1000), prefix: '', suffix: 's' },
-  modulesOnline: { label: 'MODULES ONLINE', currentValue: 0, targetValue: dashboardStore.stats.modulesOnline, prefix: '', suffix: '' }
+  totalQueries: { label: 'TOTAL QUERIES', currentValue: 0, targetValue: computed(() => dashboardStore.stats.totalQueries), prefix: '', suffix: '' },
+  activeTasks: { label: 'ACTIVE TASKS', currentValue: 0, targetValue: computed(() => dashboardStore.stats.activeTasks), prefix: '', suffix: '' },
+  avgResolution: { label: 'AVG. RESOLUTION', currentValue: 0, targetValue: computed(() => (dashboardStore.stats.avgResolutionMs / 1000)), prefix: '', suffix: 's' },
+  modulesOnline: { label: 'MODULES ONLINE', currentValue: 0, targetValue: computed(() => dashboardStore.stats.modulesOnline), prefix: '', suffix: '' }
 })
 
 const animateStats = () => {
-  const duration = 800
-  const frameRate = 60
-  const totalFrames = (duration / 1000) * frameRate
-  
-  Object.keys(displayStats).forEach(key => {
-    const k = key as keyof typeof displayStats
-    const increment = displayStats[k].targetValue / totalFrames
-    let current = 0
-    let frame = 0
+  const duration = 1500
+  const start = performance.now()
 
-    const timer = setInterval(() => {
-      frame++
-      current += increment
-      if (frame >= totalFrames) {
-        displayStats[k].currentValue = displayStats[k].targetValue
-        clearInterval(timer)
-      } else {
-        displayStats[k].currentValue = Math.floor(current * 10) / 10
-      }
-    }, 1000 / frameRate)
-  })
+  const run = (now: number) => {
+    const elapsed = now - start
+    const progress = Math.min(elapsed / duration, 1)
+    const ease = 1 - Math.pow(1 - progress, 3) // easeOutCubic
+
+    Object.keys(displayStats).forEach((key) => {
+      const stat = (displayStats as any)[key]
+      const target = typeof stat.targetValue === 'number' ? stat.targetValue : stat.targetValue.value || 0
+      stat.currentValue = Math.floor(target * ease)
+    })
+
+    if (progress < 1) requestAnimationFrame(run)
+  }
+
+  requestAnimationFrame(run)
 }
 
-// 3. MODULES CONFIG — Three Theaters
+// 3. MODULES CONFIG — Four Theaters
 const modules = [
   // ── Theater I: Dark Web ───────────────────────────────
   { name: 'Onion Crawler',    theater: 'I',   color: '#a855f7', desc: '.onion crawler via Tor SOCKS5', icon: Eye,    status: 'ACTIVE', module: 'darkweb' },
@@ -258,6 +269,8 @@ const modules = [
   { name: 'Email Hunt',       theater: 'III', color: '#f97316', desc: 'Gravatar + HaveIBeenPwned HIBP', icon: Mail,  status: 'ACTIVE', module: 'email' },
   { name: 'Username Recon',   theater: 'III', color: '#f97316', desc: 'GitHub · Reddit · HN · Twitter/X', icon: User, status: 'ACTIVE', module: 'username' },
   { name: 'Metadata Extract', theater: 'III', color: '#f97316', desc: 'EXIF and file forensics', icon: FileSearch, status: 'ACTIVE', module: 'metadata' },
+  // ── Theater IV: Deep Search ──────────────────────────
+  { name: 'Deep Search',      theater: 'IV',  color: '#00d4ff', desc: 'Multi-billion record LeakDB scan', icon: Database, status: 'ACTIVE', module: 'deepsearch' }
 ]
 
 const navigateToModule = (module: string) => {
