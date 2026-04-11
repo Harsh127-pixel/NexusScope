@@ -1084,6 +1084,25 @@
         <q-btn color="primary" label="NEW SEARCH" to="/search" />
       </div>
     </div>
+    <!-- TACTICAL RAW DATA (ALWAYS SHOWN FOR VERIFICATION) -->
+    <div v-if="currentTask?.result || currentTask?.error" class="q-mt-xl q-pb-xl">
+      <div class="row items-center justify-between q-mb-md">
+        <div class="ns-label row items-center">
+          <Code :size="16" class="q-mr-sm ns-accent-text" />
+          TACTICAL RAW DATA [Pretty Print]
+        </div>
+        <q-btn flat dense icon="content_copy" color="primary" label="COPY RAW DATA" @click="copyRaw" />
+      </div>
+      <q-card flat class="ns-report-block q-pa-md bg-black border-ns">
+        <vue-json-pretty
+          :data="currentTask?.result || { error: currentTask?.error }"
+          :deep="3"
+          show-length
+          theme="dark"
+          class="ns-json-tree"
+        />
+      </q-card>
+    </div>
   </q-page>
 </template>
 

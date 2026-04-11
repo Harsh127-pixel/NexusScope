@@ -1,5 +1,5 @@
 <template>
-  <q-page :class="$q.screen.gt.sm ? 'q-pa-xl' : 'q-pa-md'">
+  <q-page class="q-pa-xl">
     <!-- 1. PAGE HEADER -->
     <header class="q-mb-xl">
       <div class="ns-label q-mb-xs">NEXUSSCOPE / DASHBOARD</div>
@@ -25,30 +25,29 @@
         <!-- 3. QUICK LAUNCH -->
         <section class="col column">
           <div class="ns-label q-mb-md">QUICK LAUNCH MODULES</div>
-            <div class="ns-module-grid">
-              <div
-                v-for="module in modules"
-                :key="module.name"
-                class="ns-module-card clickable"
-                @click="navigateToModule(module.module)"
-              >
-                <div class="row no-wrap items-center full-width">
-                  <component :is="module.icon" :size="28" class="q-mr-md shrink-0" :style="{ color: module.color }" />
-                  <div class="column col min-width-0">
-                    <div class="module-name text-white text-weight-medium ellipsis">{{ module.name }}</div>
-                    <div class="module-desc ns-muted text-caption ellipsis">{{ module.desc }}</div>
-                  </div>
+          <div class="ns-module-grid">
+            <div 
+              v-for="module in modules" 
+              :key="module.name" 
+              class="ns-module-card clickable"
+              @click="navigateToModule(module.name)"
+            >
+              <div class="row no-wrap items-center full-width">
+                <component :is="module.icon" :size="32" class="ns-accent-text q-mr-md shrink-0" />
+                <div class="column col min-width-0">
+                  <div class="module-name text-white text-weight-medium ellipsis">{{ module.name }}</div>
+                  <div class="module-desc ns-muted text-caption ellipsis">{{ module.desc }}</div>
                 </div>
-                <q-badge
-                  :color="module.status === 'ACTIVE' ? 'positive' : 'negative'"
-                  class="absolute-top-right q-ma-xs ns-label"
-                  style="font-size: 8px"
-                >
-                  {{ module.status }}
-                </q-badge>
-                <div class="theater-chip absolute-bottom-right q-ma-xs">T{{module.theater}}</div>
               </div>
+              <q-badge 
+                :color="module.status === 'ACTIVE' ? 'positive' : 'negative'" 
+                class="absolute-top-right q-ma-xs ns-label"
+                style="font-size: 8px"
+              >
+                {{ module.status }}
+              </q-badge>
             </div>
+          </div>
         </section>
       </div>
 
@@ -88,18 +87,6 @@
                   <q-badge color="positive" rounded class="ns-label">
                     {{ dashboardStore.systemStatus.queue.status }}
                   </q-badge>
-                </div>
-              </div>
-
-              <!-- TOR STATUS -->
-              <div class="row items-center justify-between no-wrap full-width">
-                <div class="row items-center no-wrap q-mr-sm ellipsis">
-                  <Shield :size="18" class="ns-muted q-mr-md" />
-                  <span class="text-white text-weight-medium ellipsis">TOR PROXY</span>
-                </div>
-                <div class="row items-center no-wrap">
-                  <span class="text-mono ns-muted q-mr-sm" style="font-size: 11px">9050</span>
-                  <q-badge color="warning" rounded class="ns-label">INACTIVE</q-badge>
                 </div>
               </div>
 
@@ -165,27 +152,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, reactive, computed } from 'vue'
+import { ref, onMounted, onUnmounted, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from 'src/stores/dashboardStore'
-import { useQuasar } from 'quasar'
-
-const $q = useQuasar()
-import {
-  User,
-  Globe,
-  MapPin,
-  FileSearch,
-  Navigation,
+import { 
+  User, 
+  Globe, 
+  MapPin, 
+  FileSearch, 
+  Navigation, 
   Code,
   Activity,
   Server,
   Database,
-  Cloud,
-  Eye,
-  Phone,
-  Mail,
-  Shield
+  Cloud
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -195,9 +175,7 @@ const dashboardStore = useDashboardStore()
 const currentTime = ref(new Date().toLocaleString())
 let clockInterval: any = null
 
-onMounted(async () => {
-  await dashboardStore.fetchDashboardData()
-  
+onMounted(() => {
   clockInterval = setInterval(() => {
     currentTime.value = new Date().toLocaleString('en-US', {
       weekday: 'short',
@@ -211,15 +189,6 @@ onMounted(async () => {
     })
   }, 1000)
 
-  // Refresh data every 30s
-  const dataInterval = setInterval(() => {
-    dashboardStore.fetchDashboardData()
-  }, 30000)
-
-  onUnmounted(() => {
-    clearInterval(dataInterval)
-  })
-
   animateStats()
 })
 
@@ -229,52 +198,48 @@ onUnmounted(() => {
 
 // 2. STATS ANIMATION
 const displayStats = reactive({
-  totalQueries: { label: 'TOTAL QUERIES', currentValue: 0, targetValue: computed(() => dashboardStore.stats.totalQueries), prefix: '', suffix: '' },
-  activeTasks: { label: 'ACTIVE TASKS', currentValue: 0, targetValue: computed(() => dashboardStore.stats.activeTasks), prefix: '', suffix: '' },
-  avgResolution: { label: 'AVG. RESOLUTION', currentValue: 0, targetValue: computed(() => (dashboardStore.stats.avgResolutionMs / 1000)), prefix: '', suffix: 's' },
-  modulesOnline: { label: 'MODULES ONLINE', currentValue: 0, targetValue: computed(() => dashboardStore.stats.modulesOnline), prefix: '', suffix: '' }
+  totalQueries: { label: 'TOTAL QUERIES', currentValue: 0, targetValue: dashboardStore.stats.totalQueries, prefix: '', suffix: '' },
+  activeTasks: { label: 'ACTIVE TASKS', currentValue: 0, targetValue: dashboardStore.stats.activeTasks, prefix: '', suffix: '' },
+  avgResolution: { label: 'AVG. RESOLUTION', currentValue: 0, targetValue: (dashboardStore.stats.avgResolutionMs / 1000), prefix: '', suffix: 's' },
+  modulesOnline: { label: 'MODULES ONLINE', currentValue: 0, targetValue: dashboardStore.stats.modulesOnline, prefix: '', suffix: '' }
 })
 
 const animateStats = () => {
-  const duration = 1500
-  const start = performance.now()
+  const duration = 800
+  const frameRate = 60
+  const totalFrames = (duration / 1000) * frameRate
+  
+  Object.keys(displayStats).forEach(key => {
+    const k = key as keyof typeof displayStats
+    const increment = displayStats[k].targetValue / totalFrames
+    let current = 0
+    let frame = 0
 
-  const run = (now: number) => {
-    const elapsed = now - start
-    const progress = Math.min(elapsed / duration, 1)
-    const ease = 1 - Math.pow(1 - progress, 3) // easeOutCubic
-
-    Object.keys(displayStats).forEach((key) => {
-      const stat = (displayStats as any)[key]
-      const target = typeof stat.targetValue === 'number' ? stat.targetValue : stat.targetValue.value || 0
-      stat.currentValue = Math.floor(target * ease)
-    })
-
-    if (progress < 1) requestAnimationFrame(run)
-  }
-
-  requestAnimationFrame(run)
+    const timer = setInterval(() => {
+      frame++
+      current += increment
+      if (frame >= totalFrames) {
+        displayStats[k].currentValue = displayStats[k].targetValue
+        clearInterval(timer)
+      } else {
+        displayStats[k].currentValue = Math.floor(current * 10) / 10
+      }
+    }, 1000 / frameRate)
+  })
 }
 
-// 3. MODULES CONFIG — Four Theaters
+// 3. MODULES CONFIG
 const modules = [
-  // ── Theater I: Dark Web ───────────────────────────────
-  { name: 'Onion Crawler',    theater: 'I',   color: '#a855f7', desc: '.onion crawler via Tor SOCKS5', icon: Eye,    status: 'ACTIVE', module: 'darkweb' },
-  // ── Theater II: General Recon ─────────────────────────
-  { name: 'Domain Analysis',  theater: 'II',  color: '#38bdf8', desc: 'DNS, WHOIS, TLS, subdomains', icon: Globe,  status: 'ACTIVE', module: 'domain' },
-  { name: 'IP Intelligence',  theater: 'II',  color: '#38bdf8', desc: 'Geolocation, ASN, PTR records', icon: MapPin, status: 'ACTIVE', module: 'ip' },
-  { name: 'Phone Lookup',     theater: 'II',  color: '#38bdf8', desc: 'Skip Tracer — carrier & line type', icon: Phone, status: 'ACTIVE', module: 'phone' },
-  { name: 'Web Scraper',      theater: 'II',  color: '#38bdf8', desc: 'Headless browser intelligence', icon: Code,  status: 'ACTIVE', module: 'scraper' },
-  // ── Theater III: Identity & Credential ───────────────
-  { name: 'Email Hunt',       theater: 'III', color: '#f97316', desc: 'Gravatar + HaveIBeenPwned HIBP', icon: Mail,  status: 'ACTIVE', module: 'email' },
-  { name: 'Username Recon',   theater: 'III', color: '#f97316', desc: 'GitHub · Reddit · HN · Twitter/X', icon: User, status: 'ACTIVE', module: 'username' },
-  { name: 'Metadata Extract', theater: 'III', color: '#f97316', desc: 'EXIF and file forensics', icon: FileSearch, status: 'ACTIVE', module: 'metadata' },
-  // ── Theater IV: Deep Search ──────────────────────────
-  { name: 'Deep Search',      theater: 'IV',  color: '#00d4ff', desc: 'Multi-billion record LeakDB scan', icon: Database, status: 'ACTIVE', module: 'deepsearch' }
+  { name: 'Username Recon', desc: 'Cross-platform identity tracking', icon: User, status: 'ACTIVE' },
+  { name: 'Domain Analysis', desc: 'DNS, WHOIS, record lookup', icon: Globe, status: 'ACTIVE' },
+  { name: 'IP Intelligence', desc: 'Geolocation and WHOIS data', icon: MapPin, status: 'ACTIVE' },
+  { name: 'Metadata Extraction', desc: 'EXIF and file metadata', icon: FileSearch, status: 'ACTIVE' },
+  { name: 'Geolocation', desc: 'Coordinate and location mapping', icon: Navigation, status: 'ACTIVE' },
+  { name: 'Web Scraper', desc: 'Headless browser intelligence', icon: Code, status: 'ACTIVE' }
 ]
 
-const navigateToModule = (module: string) => {
-  router.push(`/search?module=${encodeURIComponent(module.toLowerCase())}`)
+const navigateToModule = (name: string) => {
+  router.push(`/search?module=${encodeURIComponent(name.toLowerCase())}`)
 }
 
 // 4. ACTIVITY TABLE CONFIG
@@ -388,14 +353,4 @@ const onRowClick = (evt: any, row: any) => {
 .min-width-0 {
   min-width: 0 !important;
 }
-
-/* Theater chip */
-.theater-chip {
-  font-size: 8px;
-  font-family: var(--ns-font-mono);
-  letter-spacing: 0.1em;
-  color: var(--ns-muted);
-  opacity: 0.6;
-}
-
 </style>
